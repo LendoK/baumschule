@@ -25,8 +25,8 @@ bl_info = {
     "location": "View3D > Add > Curve",
     "description": ("Adds a parametric tree. The method is presented by "
     "Jason Weber & Joseph Penn in their paper 'Creation and Rendering of "
-    "Realistic Trees'"),
-    "category": "Add Curve"}
+    "Realistic Trees'. Modifikation by Lendo Keilbaum"),
+    "category": "Add Mesh"}
 
 if "bpy" in locals():
     import importlib
@@ -250,7 +250,7 @@ class PresetMenu(Menu):
 
 class NewTree(bpy.types.Operator):
     bl_idname = "new.newtree"
-    bl_label = "Spawn New Tree"
+    bl_label = "Baumschule: Spawn New Tree"
     bl_options = {'REGISTER'}
 
     def execute(self, context):
@@ -272,52 +272,17 @@ class NewTree(bpy.types.Operator):
         return{'FINISHED'}
 
 class AddTree(bpy.types.Panel):
-    # bl_idname = "curve.tree_add"
+    bl_idname = "curve.tree_add"
     bl_space_type = "VIEW_3D"
     bl_label = "Baumschule:"
     bl_region_type = "TOOLS"
     bl_category ="Baumschule"
-    # bl_options = {'REGISTER', 'UNDO'}
-
-    # @classmethod
-    # def poll(cls, context):
-    #     return context.mode == 'OBJECT'
 
     def draw(self, context):
         if context.active_object and context.active_object.select and context.active_object.tree_props.istree:
             context.object.tree_props.draw(self.layout)
         col = self.layout.column(align=True)
         self.layout.operator("new.newtree", text='create new Tree')
-
-    # def execute(self, context):
-    #     # Ensure the use of the global variables
-    #     global settings, useSet
-    #     start_time = time.time()
-    #     # bpy.ops.ImportData.filename = "quaking_aspen"
-    #     # If we need to set the properties from a preset then do it here
-    #     if useSet:
-    #         for a, b in settings.items():
-    #             setattr(self, a, b)
-    #         if self.limitImport:
-    #             setattr(self, 'levels', min(settings['levels'], 2))
-    #             setattr(self, 'showLeaves', False)
-    #         useSet = False
-    #     if not self.do_update:
-    #         return {'PASS_THROUGH'}
-    #     utils.addTree(self)
-    #     # cProfile.runctx("addTree(self)", globals(), locals())
-    #     print("Tree creation in %0.1fs" % (time.time() - start_time))
-
-    #     return {'FINISHED'}
-
-    # def execute(self, context):
-    #     utils.addTree()
-    #     print("update")
-    #     return {'FINISHED'}
-
-    # def invoke(self, context, event):
-    #     # bpy.ops.sapling.importdata(filename="quaking_aspen.py")
-    #     return self.execute(context)
 
 
 class tree_tree_props(bpy.types.PropertyGroup):
@@ -1232,19 +1197,19 @@ class tree_tree_props(bpy.types.PropertyGroup):
             box.prop(self, 'af3')
 
 def menu_func(self, context):
-    self.layout.operator(AddTree.bl_idname, text="Sapling Tree Gen", icon='CURVE_DATA')
+    self.layout.operator(NewTree.bl_idname, text="Baumschule", icon='CURVE_DATA')
 
 
 def register():
     bpy.utils.register_module(__name__)
     bpy.types.Object.tree_props = bpy.props.PointerProperty(type=tree_tree_props)
-    # bpy.types.INFO_MT_curve_add.append(menu_func)
+    bpy.types.INFO_MT_mesh_add.append(menu_func)
 
 
 def unregister():
     bpy.utils.unregister_module(__name__)
 
-    # bpy.types.INFO_MT_curve_add.remove(menu_func)
+    bpy.types.INFO_MT_mesh_add.remove(menu_func)
 
 
 if __name__ == "__main__":
