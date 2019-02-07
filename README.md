@@ -13,4 +13,4 @@ Blender addon to create game ready trees. This addon is a modification of "Sapli
     * branches polygon reduction
 * basic UV editing for branches and leafs
 ## Issues
-* leaf mesh only works with convert to mesh
+* pruning, armature, animations and save presets not ported yet
