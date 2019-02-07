@@ -255,6 +255,7 @@ class NewTree(bpy.types.Operator):
     bl_idname = "new.newtree"
     bl_label = "Baumschule: Spawn New Tree"
     bl_options = {'REGISTER'}
+    bl_description="plant a new tree"
 
     def execute(self, context):
 
@@ -283,8 +284,6 @@ class AddTree(bpy.types.Panel):
 
     def draw(self, context):
         row = self.layout.row()
-        row.label("", icon_value=custom_icons["custom_icon"].icon_id)
-        row.label("", icon_value=custom_icons["custom_icon"].icon_id)
         row.label("", icon_value=custom_icons["custom_icon"].icon_id)
         if context.active_object and context.active_object.select and context.active_object.tree_props.istree:
             context.object.tree_props.draw(self.layout)
