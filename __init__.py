@@ -98,10 +98,11 @@ settings = [('0', 'Geometry', 'Geometry'),
             ('1', 'Branch Radius', 'Branch Radius'),
             ('2', 'Branch Splitting', 'Branch Splitting'),
             ('3', 'Branch Growth', 'Branch Growth'),
-            ('4', 'Pruning', 'Pruning'),
-            ('5', 'Leaves', 'Leaves'),
-            ('6', 'Armature', 'Armature'),
-            ('7', 'Animation', 'Animation')]
+            ('4', 'Leaves', 'Leaves')]
+
+            # ('5', 'Pruning', 'Pruning'),
+            # ('6', 'Armature', 'Armature'),
+            # ('7', 'Animation', 'Animation')]
 
 branchmodes = [("original", "Original", "rotate around each branch"),
               ("rotate", "Rotate", "evenly distribute  branches to point outward from center of tree"),
@@ -201,7 +202,6 @@ class ImportData(Operator):
     filename = StringProperty()
 
     def execute(self, context):
-        print("import2")
         # Make sure the operator knows about the global variables
         global settings, useSet
         # Read the preset data into the global settings
@@ -330,6 +330,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
             if self.limitImport:
                 setattr(self, 'levels', min(settings['levels'], 2))
                 setattr(self, 'showLeaves', False)
+        self.bevel = True
         useSet = False
         bs_utils.addTree(context.object)
 
@@ -776,7 +777,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
         description='The shape of the leaves',
         items=(('hex', 'Hexagonal', '0'), ('rect', 'Rectangular', '1'),
                ('dFace', 'DupliFaces', '2'), ('dVert', 'DupliVerts', '3')),
-        default='hex', update=update_leaves
+        default='rect', update=update_leaves
         )
     leafDupliObj = EnumProperty(
         name='Leaf Object',
@@ -977,9 +978,8 @@ class tree_tree_props(bpy.types.PropertyGroup):
         if self.chooseSet == '0':
             box = layout.box()
             box.label("Geometry:")
-            box.prop(self, 'bevel')
-            # box.prop(self, 'makeMesh')
-            box.prop(self, 'convertToMesh')
+            # box.prop(self, 'bevel')
+            # box.prop(self, 'convertToMesh')
 
             row = box.row()
             row.prop(self, 'bevelRes')
@@ -1115,21 +1115,8 @@ class tree_tree_props(bpy.types.PropertyGroup):
             box.prop(self, 'useOldDownAngle')
             box.prop(self, 'useParentAngle')
 
+
         elif self.chooseSet == '4':
-            box = layout.box()
-            box.label("Prune:")
-            box.prop(self, 'prune')
-            box.prop(self, 'pruneRatio')
-            row = box.row()
-            row.prop(self, 'pruneWidth')
-            row.prop(self, 'pruneBase')
-            box.prop(self, 'pruneWidthPeak')
-
-            row = box.row()
-            row.prop(self, 'prunePowerHigh')
-            row.prop(self, 'prunePowerLow')
-
-        elif self.chooseSet == '5':
             box = layout.box()
             box.label("Leaves:")
             box.prop(self, 'showLeaves')
@@ -1166,6 +1153,19 @@ class tree_tree_props(bpy.types.PropertyGroup):
             row =box.row()
             # box.label(" ")
             # box.prop(self, 'bend')
+        elif self.chooseSet == '5':
+            box = layout.box()
+            box.label("Prune:")
+            box.prop(self, 'prune')
+            box.prop(self, 'pruneRatio')
+            row = box.row()
+            row.prop(self, 'pruneWidth')
+            row.prop(self, 'pruneBase')
+            box.prop(self, 'pruneWidthPeak')
+
+            row = box.row()
+            row.prop(self, 'prunePowerHigh')
+            row.prop(self, 'prunePowerLow')
 
         elif self.chooseSet == '6':
             box = layout.box()

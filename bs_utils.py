@@ -1014,9 +1014,9 @@ def kickstart_trunk(addstem, levels, leaves, branches, cu, curve, curveRes,
     newSpline = cu.splines.new('BEZIER')
     cu.resolution_u = resU
     newPoint = newSpline.bezier_points[-1]
-    newPoint.co = Vector((0, 0, -0.3))
-    newPoint.handle_right = Vector((0, 0, 0.7))
-    newPoint.handle_left = Vector((0, 0, -1.3))
+    newPoint.co = Vector((0, 0, 0.0))
+    newPoint.handle_right = Vector((0, 0, 1))
+    newPoint.handle_left = Vector((0, 0, -1))
     # (newPoint.handle_right_type, newPoint.handle_left_type) = ('VECTOR', 'VECTOR')
     branchL = scaleVal * length[0]
     curveVal = curve[0] / curveRes[0]
