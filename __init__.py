@@ -32,9 +32,10 @@ if "bpy" in locals():
     import importlib
     importlib.reload(bs_utils)
 else:
-    from Baumschule import bs_utils
+    from baumschule import bs_utils
 
 import bpy
+import bpy.utils.previews
 import time
 import os
 import ast
@@ -57,6 +58,8 @@ from bpy.props import (
         )
 
 useSet = False
+# global variable to store icons in
+custom_icons = None
 
 shapeList = [('0', 'Conical (0)', 'Shape = 0'),
             ('1', 'Spherical (1)', 'Shape = 1'),
@@ -268,7 +271,6 @@ class NewTree(bpy.types.Operator):
         bpy.context.scene.objects.active = treeOb
         treeOb.tree_props.istree = True
         bs_utils.addTree(treeOb)
-        print("hallo")
         return{'FINISHED'}
 
 class AddTree(bpy.types.Panel):
@@ -278,7 +280,12 @@ class AddTree(bpy.types.Panel):
     bl_region_type = "TOOLS"
     bl_category ="Baumschule"
 
+
     def draw(self, context):
+        row = self.layout.row()
+        row.label("", icon_value=custom_icons["custom_icon"].icon_id)
+        row.label("", icon_value=custom_icons["custom_icon"].icon_id)
+        row.label("", icon_value=custom_icons["custom_icon"].icon_id)
         if context.active_object and context.active_object.select and context.active_object.tree_props.istree:
             context.object.tree_props.draw(self.layout)
         col = self.layout.column(align=True)
@@ -286,7 +293,7 @@ class AddTree(bpy.types.Panel):
 
 
 class tree_tree_props(bpy.types.PropertyGroup):
-
+    global custom_icons
     def objectList(self, context):
         objects = []
         bObjects = bpy.data.objects
@@ -299,7 +306,6 @@ class tree_tree_props(bpy.types.PropertyGroup):
                 [('NONE', "No objects", "No appropriate objects in the Scene")])
 
     def update_tree(self, context):
-        print("update porps")
         if not useSet:
             bs_utils.addTree(context.object)
         self.do_update = True
@@ -1197,18 +1203,27 @@ class tree_tree_props(bpy.types.PropertyGroup):
             box.prop(self, 'af3')
 
 def menu_func(self, context):
-    self.layout.operator(NewTree.bl_idname, text="Baumschule", icon='CURVE_DATA')
+    self.layout.operator(NewTree.bl_idname, text="Baumschule", icon_value=custom_icons["custom_icon"].icon_id)
 
 
 def register():
+    global custom_icons
+    custom_icons = bpy.utils.previews.new()
+    script_path = bpy.utils.user_resource('SCRIPTS', "addons")
+    icons_dir = os.path.join(os.path.dirname(
+        script_path), "addons", "baumschule", "icons")
+    custom_icons.load("custom_icon", os.path.join(icons_dir, "icon_baum.png"), 'IMAGE')
+    print(icons_dir)
     bpy.utils.register_module(__name__)
     bpy.types.Object.tree_props = bpy.props.PointerProperty(type=tree_tree_props)
     bpy.types.INFO_MT_mesh_add.append(menu_func)
 
 
 def unregister():
+    global custom_icons
+    global custom_icons
+    bpy.utils.previews.remove(custom_icons)
     bpy.utils.unregister_module(__name__)
-
     bpy.types.INFO_MT_mesh_add.remove(menu_func)
 
 
