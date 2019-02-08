@@ -1771,7 +1771,7 @@ def addTree(treeOb):
     if props.convertToMesh:
 
         bpy.ops.object.convert(target='MESH')
-        bpy.context.object.data.uv_textures["Orco"].name = "UVMap"
+        bpy.context.object.data.uv_textures[0].name = "UVMap"
         if props.rotateUV or props.UVSize[0] > 1.0 or props.UVSize[1] > 1.0:
             for l in treeOb.data.uv_layers.active.data:
                 if props.rotateUV:
