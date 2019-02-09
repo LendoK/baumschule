@@ -152,7 +152,8 @@ class ExportData(Operator):
 
     def execute(self, context):
         # Unpack some data from the input
-        data, filename, overwrite = eval(self.data)
+        filename, overwrite = eval(self.data)
+        data = str(context.active_object.tree_props.get_property_dict())
         """
         try:
             # Check whether the file exists by trying to open it.
@@ -324,7 +325,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
         global settings, useSet
         if useSet:
             for a, b in settings.items():
-                print("prop: {0}, wert: {1}".format(a, b))
+                # print("prop: {0}, wert: {1}".format(a, b))
                 if getattr(self, a):
                     setattr(self, a, b)
             if self.limitImport:
@@ -775,8 +776,8 @@ class tree_tree_props(bpy.types.PropertyGroup):
     leafShape = EnumProperty(
         name='Leaf Shape',
         description='The shape of the leaves',
-        items=(('hex', 'Hexagonal', '0'), ('rect', 'Rectangular', '1'),
-               ('dFace', 'DupliFaces', '2'), ('dVert', 'DupliVerts', '3')),
+        items=(('hex', 'Hexagonal', 'hex'), ('rect', 'Rectangular', 'rect'),
+               ('dFace', 'DupliFaces', 'dFace'), ('dVert', 'DupliVerts', 'dVert')),
         default='rect', update=update_leaves
         )
     leafDupliObj = EnumProperty(
@@ -966,6 +967,33 @@ class tree_tree_props(bpy.types.PropertyGroup):
         )
     """
 
+    def get_property_dict(self):
+        print("outside of loop")
+        blacklist = ["chooseSet", "presetName", "limitImport", "do_update", "overwrite", "leafDupliObj", "istree"]
+
+        data = []
+        for a, b in (self.items()):
+            # print("in property diect loop")
+            if a in blacklist:
+                continue
+            # If the property is a vector property then add the slice to the list
+            try:
+                len(b)
+                data.append((a, b[:]))
+            # Otherwise, it is fine so just add it
+            except:
+                data.append((a, b))
+        # Create the dict from the list
+        data = dict(data)
+        #set enums
+        data["leafShape"] = self.leafShape
+        data["rMode"] = self.rMode
+        data["shape"] = self.shape
+        data["shapeS"] = self.shapeS
+        data["leafDist"] = self.leafDist
+        data["handleType"] = self.handleType
+        return data
+
 
     def draw(self, layout):
         # layout = self.layout
@@ -1007,34 +1035,19 @@ class tree_tree_props(bpy.types.PropertyGroup):
             row.prop(self, 'rotateUV')
             row.prop(self, 'UVSize')
 
-            # Here we create a dict of all the properties.
-            # Unfortunately as_keyword doesn't work with vector properties,
-            # so we need something custom. This is it
-            # data = []
-            # for a, b in (self.as_keywords(
-            #                         ignore=("chooseSet", "presetName", "limitImport",
-            #                                 "do_update", "overwrite", "leafDupliObj"))).items():
-            #     # If the property is a vector property then add the slice to the list
-            #     try:
-            #         len(b)
-            #         data.append((a, b[:]))
-            #     # Otherwise, it is fine so just add it
-            #     except:
-            #         data.append((a, b))
-            # # Create the dict from the list
-            # data = dict(data)
 
-            # row = box.row()
-            # row.prop(self, 'presetName')
-            # # Send the data dict and the file name to the exporter
-            # row.operator('sapling.exportdata').data = repr([repr(data), self.presetName, self.overwrite])
+            box.label("Presets:")
+            row = box.row()
+            row.prop(self, 'overwrite')
+            row.prop(self, 'limitImport')
+
+            row = box.row()
+            row.prop(self, 'presetName')
+            # Send the data dict and the file name to the exporter
+            row.operator('sapling.exportdata').data = repr([self.presetName, self.overwrite])
             box.label("Load Preset:")
             row = box.row()
-            row.label(" ")
-            row.prop(self, 'overwrite')
-            row = box.row()
             row.menu('SAPLING_MT_preset', text='Load Preset')
-            row.prop(self, 'limitImport')
 
         elif self.chooseSet == '1':
             box = layout.box()
@@ -1212,14 +1225,12 @@ def register():
     icons_dir = os.path.join(os.path.dirname(
         script_path), "addons", "baumschule", "icons")
     custom_icons.load("custom_icon", os.path.join(icons_dir, "icon_baum.png"), 'IMAGE')
-    print(icons_dir)
     bpy.utils.register_module(__name__)
     bpy.types.Object.tree_props = bpy.props.PointerProperty(type=tree_tree_props)
     bpy.types.INFO_MT_mesh_add.append(menu_func)
 
 
 def unregister():
-    global custom_icons
     global custom_icons
     bpy.utils.previews.remove(custom_icons)
     bpy.utils.unregister_module(__name__)
