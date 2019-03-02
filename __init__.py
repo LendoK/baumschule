@@ -324,6 +324,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
     def load_settings(self, context):
         global settings, useSet
         if useSet:
+            self.showLeaves = False
             for a, b in settings.items():
                 # print("prop: {0}, wert: {1}".format(a, b))
                 if getattr(self, a):
@@ -395,13 +396,14 @@ class tree_tree_props(bpy.types.PropertyGroup):
         name='Length',
         description='The relative lengths of each branch level (nLength)',
         min=0.000001,
+        max=1.0,
         default=[1, 0.3, 0.6, 0.45],
         size=4, update=update_tree
         )
     lengthV = FloatVectorProperty(
         name='Length Variation',
         description='The relative length variations of each level (nLengthV)',
-        min=0.0,
+        min=0.0001,
         max=1.0,
         default=[0, 0, 0, 0],
         size=4, update=update_tree
@@ -430,6 +432,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
         name='Branches',
         description='The number of branches grown at each level (nBranches)',
         min=0,
+        max=30,
         default=[50, 30, 10, 10],
         size=4, update=update_tree
         )
@@ -437,7 +440,16 @@ class tree_tree_props(bpy.types.PropertyGroup):
         name='Curve Resolution',
         description='The number of segments on each branch (nCurveRes)',
         min=1,
+        max=10,
         default=[3, 5, 3, 1],
+        size=4, update=update_tree
+        )
+    deadBranch_C = FloatVectorProperty(
+        name='Dead Brach chance',
+        description='how likely the brach is dead',
+        min=0.0,
+        max=1.0,
+        default=[0.0, 0.0, 0.0, 0.0],
         size=4, update=update_tree
         )
     curve = FloatVectorProperty(
@@ -462,12 +474,14 @@ class tree_tree_props(bpy.types.PropertyGroup):
         name='Base Splits',
         description='Number of trunk splits at its base (nBaseSplits)',
         min=0,
+        max=10,
         default=0, update=update_tree
         )
     segSplits = FloatVectorProperty(
         name='Segment Splits',
         description='Number of splits per segment (nSegSplits)',
         min=0,
+        max=6,
         soft_max=3,
         default=[0, 0, 0, 0],
         size=4, update=update_tree
@@ -722,7 +736,11 @@ class tree_tree_props(bpy.types.PropertyGroup):
         name='Leaves',
         description="Maximum number of leaves per branch (negative values grow "
                     "leaves from branch tip (palmate compound leaves))",
-        default=25, update=update_tree
+        min=1,
+        # soft_min=20,
+        # soft_max=20,
+        max=30,
+        default=15, update=update_tree
         )
     leafDownAngle = FloatProperty(
         name='Leaf Down Angle',
@@ -776,8 +794,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
     leafShape = EnumProperty(
         name='Leaf Shape',
         description='The shape of the leaves',
-        items=(('hex', 'Hexagonal', 'hex'), ('rect', 'Rectangular', 'rect'),
-               ('dFace', 'DupliFaces', 'dFace'), ('dVert', 'DupliVerts', 'dVert')),
+        items=(('hex', 'Hexagonal', 'hex'), ('rect', 'Rectangular', 'rect'), ('dVert', 'DupliVerts', 'dVert')),
         default='rect', update=update_leaves
         )
     leafDupliObj = EnumProperty(
@@ -834,13 +851,14 @@ class tree_tree_props(bpy.types.PropertyGroup):
         name='Bevel Resolution',
         description='The bevel resolution of the curves',
         min=0,
-        max=32,
+        max=16,
         default=0, update=update_tree
         )
     resU = IntProperty(
         name='Curve Resolution',
         description='The resolution along the curves',
         min=1,
+        max=10,
         default=4, update=update_tree
         )
     handleType = EnumProperty(
@@ -1006,8 +1024,8 @@ class tree_tree_props(bpy.types.PropertyGroup):
         if self.chooseSet == '0':
             box = layout.box()
             box.label("Geometry:")
-            # box.prop(self, 'bevel')
-            # box.prop(self, 'convertToMesh')
+            box.prop(self, 'bevel')
+            box.prop(self, 'convertToMesh')
 
             row = box.row()
             row.prop(self, 'bevelRes')
@@ -1015,9 +1033,9 @@ class tree_tree_props(bpy.types.PropertyGroup):
 
             box.prop(self, 'handleType')
             box.prop(self, 'shape')
-
-            col = box.column()
-            col.prop(self, 'customShape')
+            if self.shape == '8':
+                col = box.column()
+                col.prop(self, 'customShape')
 
             row = box.row()
             box.prop(self, 'shapeS')
@@ -1104,6 +1122,8 @@ class tree_tree_props(bpy.types.PropertyGroup):
             col.prop(self, 'rMode')
 
             box.column().prop(self, 'curveRes')
+            box.column().prop(self, 'deadBranch_C')
+
 
         elif self.chooseSet == '3':
             box = layout.box()
@@ -1133,6 +1153,8 @@ class tree_tree_props(bpy.types.PropertyGroup):
             box = layout.box()
             box.label("Leaves:")
             box.prop(self, 'showLeaves')
+            box = box.column()
+            box.enabled = self.showLeaves
             box.prop(self, 'leafShape')
             box.prop(self, 'leafDupliObj')
             box.prop(self, 'leaves')

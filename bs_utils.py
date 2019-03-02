@@ -21,6 +21,7 @@
 import bpy
 import time
 import copy
+import bmesh
 
 from mathutils import (
         Euler,
@@ -578,11 +579,10 @@ def growSpline(n, stem, numSplit, splitAng, splitAngV, splineList,
     stem.updateEnd()
     # return splineList
 
-
-def genLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
-                offset, index, downAngle, downAngleV, rotate, rotateV, oldRot,
-                bend, leaves, leafShape, leafangle, horzLeaves):
-    if leafShape == 'hex':
+def GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, leave_UVSize, leaf_flipUV):
+    if leafShape == 'dVert':
+        return bpy.data.objects[leafDupliObj].data.copy()
+    elif leafShape == 'hex':
         verts = [
             Vector((0, 0, 0)), Vector((0.5, 0, 1 / 3)), Vector((0.5, 0, 2 / 3)),
             Vector((0, 0, 1)), Vector((-0.5, 0, 2 / 3)), Vector((-0.5, 0, 1 / 3))
@@ -594,23 +594,59 @@ def genLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
         verts = [Vector((.5, 0, 0)), Vector((.5, 0, 1)), Vector((-.5, 0, 1)), Vector((-.5, 0, 0))]
         edges = [[0, 1], [1, 2], [2, 3], [3, 0]]
         faces = [[0, 1, 2, 3]]
-    elif leafShape == 'dFace':
-        verts = [Vector((.5, .5, 0)), Vector((.5, -.5, 0)), Vector((-.5, -.5, 0)), Vector((-.5, .5, 0))]
-        edges = [[0, 1], [1, 2], [2, 3], [3, 0]]
-        faces = [[0, 3, 2, 1]]
-    elif leafShape == 'dVert':
-        verts = [Vector((0, 0, 1))]
-        edges = []
-        faces = []
+    leafTemplate = bpy.data.meshes.new('leaves')
+    leafTemplate.from_pydata(verts, (), faces)
+    if leafShape == 'rect':
+        leafTemplate.uv_textures.new("UVMap")
+        uvlayer = leafTemplate.uv_layers.active.data
 
-    vertsList = []
-    facesList = []
-    normal = Vector((0, 0, 1))
+        u1 = (0.5 * (1 - leafScaleX)) * leave_UVSize[0]
+        u2 = (1 - u1) * leave_UVSize[1]
+
+        if leaf_flipUV :
+            temp = u2
+            u2 = u1
+            u1 = temp
+
+        # for i in range(0, len(faces)):
+            # if props.leaf_flipUVrandom and random() > 0.5:
+            #     temp = u2
+            #     u2 = u1
+            #     u1 = temp
+        uvlayer[0].uv = Vector((u2, 0))
+        uvlayer[1].uv = Vector((u2, 1))
+        uvlayer[2].uv = Vector((u1, 1))
+        uvlayer[3].uv = Vector((u1, 0))
+
+    elif leafShape == 'hex':
+        leafTemplate.uv_textures.new("UVMap")
+        uvlayer = leafTemplate.uv_layers.active.data
+
+        u1 = .5 * (1 - leafScaleX)
+        u2 = 1 - u1
+
+        for i in range(0, int(len(faces) / 2)):
+            uvlayer[i * 8 + 0].uv = Vector((.5, 0))
+            uvlayer[i * 8 + 1].uv = Vector((u1, 1 / 3))
+            uvlayer[i * 8 + 2].uv = Vector((u1, 2 / 3))
+            uvlayer[i * 8 + 3].uv = Vector((.5, 1))
+
+            uvlayer[i * 8 + 4].uv = Vector((.5, 0))
+            uvlayer[i * 8 + 5].uv = Vector((.5, 1))
+            uvlayer[i * 8 + 6].uv = Vector((u2, 2 / 3))
+            uvlayer[i * 8 + 7].uv = Vector((u2, 1 / 3))
+    return leafTemplate
+
+def CreateLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
+                offset, index, downAngle, downAngleV, rotate, rotateV, oldRot,
+                bend, leaves, leafShape, leafangle, horzLeaves, ori_mesh, leaf_bmesh, leaf_flipUVrandom):
+    #location
+    loc_mat = Matrix.Translation(loc)
 
     if leaves < 0:
-        rotMat = Matrix.Rotation(oldRot, 3, 'Y')
+        rot_mat = Matrix.Rotation(oldRot, 3, 'Y')
     else:
-        rotMat = Matrix.Rotation(oldRot, 3, 'Z')
+        rot_mat = Matrix.Rotation(oldRot, 3, 'Z')
 
     # If the -ve flag for rotate is used we need to find which side of the stem
     # the last child point was and then grow in the opposite direction
@@ -620,17 +656,12 @@ def genLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
         # If the special -ve flag for leaves is used we need a different rotation of the leaf geometry
         if leaves == -1:
             # oldRot = 0
-            rotMat = Matrix.Rotation(0, 3, 'Y')
+            rot_mat = Matrix.Rotation(0, 3, 'Y')
         elif leaves < -1:
             oldRot += rotate / (-leaves - 1)
         else:
             oldRot += rotate + uniform(-rotateV, rotateV)
-    """
-    if leaves < 0:
-        rotMat = Matrix.Rotation(oldRot, 3, 'Y')
-    else:
-        rotMat = Matrix.Rotation(oldRot, 3, 'Z')
-    """
+
     if leaves >= 0:
         # downRotMat = Matrix.Rotation(downAngle+uniform(-downAngleV, downAngleV), 3, 'X')
 
@@ -651,12 +682,6 @@ def genLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
     else:
         leafScale = leafScale * (1 - f * leafScaleT)
 
-    leafScale = leafScale * uniform(1 - leafScaleV, 1 + leafScaleV)
-
-    if leafShape == 'dFace':
-        leafScale = leafScale * .1
-
-    # If the bending of the leaves is used we need to rotate them differently
     if (bend != 0.0) and (leaves >= 0):
         normal = yAxis.copy()
         orientationVec = zAxis.copy()
@@ -678,52 +703,47 @@ def genLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
 
         rotateZOrien2 = Matrix.Rotation(-orientation, 3, 'X')
 
-    # For each of the verts we now rotate and scale them, then append them to the list to be added to the mesh
-    for v in verts:
-        v.z *= leafScale
-        v.y *= leafScale
-        v.x *= leafScaleX * leafScale
 
-        v.rotate(Euler((0, 0, radians(180))))
+    rot_mat2 = Matrix.Rotation(radians(180), 3, 'Z')
+    rot_mat2 *= Matrix.Rotation(radians(-leafangle), 3, 'X')
+    if rotate < 0:
+        rot_mat2 *= Matrix.Rotation(radians(90), 3, 'Z')
+        if oldRot < 0:
+            rot_mat2 *= Matrix.Rotation(radians(180), 3, 'Z')
 
-        # leafangle
-        v.rotate(Matrix.Rotation(radians(-leafangle), 3, 'X'))
+    if (leaves > 0) and (rotate > 0) and horzLeaves:
+        nRotMat = Matrix.Rotation(-oldRot + rotate, 3, 'Z')
 
-        if rotate < 0:
-            v.rotate(Euler((0, 0, radians(90))))
-            if oldRot < 0:
-                v.rotate(Euler((0, 0, radians(180))))
+    m2 = quat.to_matrix()
+    final_rot_mat =  m2.to_3x3()*rot_mat* downRotMat *nRotMat *rot_mat2
+    # v.rotate(rotMat)
+    # v.rotate(quat)
+    if (bend != 0.0) and (leaves > 0):
+        # Correct the rotation
+        final_rot_mat *= rotateZ * rotateZOrien * rotateX * rotateZOrien2
 
-        if (leaves > 0) and (rotate > 0) and horzLeaves:
-            nRotMat = Matrix.Rotation(-oldRot + rotate, 3, 'Z')
-            v.rotate(nRotMat)
 
-        if leaves > 0:
-            v.rotate(downRotMat)
 
-        v.rotate(rotMat)
-        v.rotate(quat)
-
-        if (bend != 0.0) and (leaves > 0):
-            # Correct the rotation
-            v.rotate(rotateZ)
-            v.rotate(rotateZOrien)
-            v.rotate(rotateX)
-            v.rotate(rotateZOrien2)
-
-    if leafShape == 'dVert':
-        normal = verts[0]
-        normal.normalize()
-        v = loc
-        vertsList.append([v.x, v.y, v.z])
+    if leaf_flipUVrandom and random() > 0.5:
+        fl = -1
     else:
-        for v in verts:
-            v += loc
-            vertsList.append([v.x, v.y, v.z])
-        for f in faces:
-            facesList.append([f[0] + index, f[1] + index, f[2] + index, f[3] + index])
+        fl = 1
+    #scaling
+    leafScale = leafScale * uniform(1 - leafScaleV, 1 + leafScaleV)
+    scale_mat = Matrix.Scale(leafScale*leafScaleX * fl, 4, Vector((1.0, 0.0, 0.0)))
+    scale_mat = scale_mat * Matrix.Scale(leafScale, 4, Vector((0.0, 1.0, 0.0)))
+    scale_mat = scale_mat * Matrix.Scale(leafScale, 4, Vector((0.0, 0.0, 1.0)))
 
-    return vertsList, facesList, normal, oldRot
+
+    trans_mat = loc_mat * final_rot_mat.to_4x4() * scale_mat
+
+
+    ori_mesh.transform(trans_mat)
+    leaf_bmesh.from_mesh(ori_mesh)
+    trans_mat.invert()
+    #transform back
+    ori_mesh.transform(trans_mat)
+    return oldRot
 
 
 def create_armature(armAnim, leafP, cu, frameRate, leafMesh, leafObj, leafVertSize, leaves,
@@ -1263,7 +1283,7 @@ def perform_pruning(baseSize, baseSplits, childP, cu, currentMax, currentMin, cu
                     originalSeg, prune, prunePowerHigh, prunePowerLow, pruneRatio, pruneWidth, pruneBase,
                     pruneWidthPeak, randState, ratio, scaleVal, segSplits, splineToBone, splitAngle, splitAngleV,
                     st, startPrune, branchDist, length, splitByLen, closeTip, nrings, splitBias, splitHeight,
-                    attractOut, rMode, lengthV, taperCrown, boneStep, rotate, rotateV):
+                    attractOut, rMode, lengthV, taperCrown, boneStep, rotate, rotateV, deadBranch_C):
     while startPrune and ((currentMax - currentMin) > 0.005):
         setstate(randState)
 
@@ -1352,11 +1372,12 @@ def perform_pruning(baseSize, baseSplits, childP, cu, currentMax, currentMin, cu
                 if (k == int(curveRes[n] / 2 + 0.5)) and (curveBack[n] != 0):
                     spl.curv += 2 * (curveBack[n] / curveRes[n])  # was -4 *
 
-                growSpline(
-                        n, spl, numSplit, splitAngle[n], splitAngleV[n], splineList,
-                        handles, splineToBone, closeTip, kp, splitHeight, attractOut[n],
-                        stemsegL, lengthV[n], taperCrown, boneStep, rotate, rotateV
-                        )
+                if(random() > deadBranch_C[n]):
+                    growSpline(
+                            n, spl, numSplit, splitAngle[n], splitAngleV[n], splineList,
+                            handles, splineToBone, closeTip, kp, splitHeight, attractOut[n],
+                            stemsegL, lengthV[n], taperCrown, boneStep, rotate, rotateV
+                            )
 
         # If pruning is enabled then we must to the check to see if the end of the spline is within the evelope
         if prune:
@@ -1596,6 +1617,8 @@ def addTree(treeOb):
     useOldDownAngle = props.useOldDownAngle
     useParentAngle = props.useParentAngle
 
+    deadBranch = props.deadBranch_C
+
     if not makeMesh:
         boneStep = [1, 1, 1, 1]
 
@@ -1622,8 +1645,6 @@ def addTree(treeOb):
         handles = 'AUTO'
     else:
         handles = 'VECTOR'
-
-    # treeOb.location=bpy.context.scene.cursor_location attractUp
 
     cu.dimensions = '3D'
     cu.fill_mode = 'FULL'
@@ -1701,6 +1722,7 @@ def addTree(treeOb):
         # closeTip only on last level
         closeTipp = all([(n == levels - 1), closeTip])
 
+
         # If this is the first level of growth (the trunk) then we need some special work to begin the tree
         if n == 0:
             kickstart_trunk(addstem, levels, leaves, branches, cu, curve, curveRes,
@@ -1757,7 +1779,7 @@ def addTree(treeOb):
                                         segSplits, splineToBone, splitAngle, splitAngleV, st, startPrune,
                                         branchDist, length, splitByLen, closeTipp, nrings, splitBias,
                                         splitHeight, attractOut, rMode, lengthV, taperCrown, boneStep,
-                                        rotate, rotateV
+                                        rotate, rotateV, deadBranch
                                         )
 
         levelCount.append(len(cu.splines))
@@ -1782,7 +1804,22 @@ def addTree(treeOb):
         if oldmesh: bpy.data.meshes.remove(oldmesh)
 
     leafP = []
+
     if leaves:
+        leaf_bmesh = bmesh.new()
+        leafDupliVerts = []
+        leafDupliFaces = []
+        leafDupliUVs = []
+        ori_mesh = GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, props.leave_UVSize, props.leaf_flipUV)
+        if leafShape == 'dVert':
+            try:
+                if leafDupliObj not in "NONE":
+                    leafDupliVerts = [Vector((v.co.x, v.co.y, v.co.z)) for v in bpy.data.objects[leafDupliObj].data.vertices]
+                    leafDupliFaces = [list(p.vertices) for p in bpy.data.objects[leafDupliObj].data.polygons]
+                    leafDupliUVs = [ul.uv for ul in  bpy.data.objects[leafDupliObj].data.uv_layers.active.data]
+            except KeyError:
+                pass
+
         oldRot = 0.0
         n = min(3, n + 1)
         # For each of the child points we add leaves
@@ -1791,30 +1828,19 @@ def addTree(treeOb):
             if leaves < 0:
                 oldRot = -leafRotate / 2
                 for g in range(abs(leaves)):
-                    (vertTemp, faceTemp, normal, oldRot) = genLeafMesh(
-                                                                leafScale, leafScaleX, leafScaleT,
-                                                                leafScaleV, cp.co, cp.quat, cp.offset,
-                                                                len(leafVerts), leafDownAngle, leafDownAngleV,
-                                                                leafRotate, leafRotateV,
-                                                                oldRot, bend, leaves, leafShape,
-                                                                leafangle, horzLeaves
-                                                                )
-                    leafVerts.extend(vertTemp)
-                    leafFaces.extend(faceTemp)
-                    leafNormals.extend(normal)
+                    oldRot = CreateLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV,
+                            cp.co, cp.quat, cp.offset, len(leafVerts),
+                            leafDownAngle, leafDownAngleV, leafRotate,
+                            leafRotateV, oldRot, bend, leaves, leafShape,
+                            leafangle, horzLeaves, ori_mesh, leaf_bmesh, props.leaf_flipUVrandom)
                     leafP.append(cp)
             # Otherwise just add the leaves like splines
             else:
-                (vertTemp, faceTemp, normal, oldRot) = genLeafMesh(
-                                                            leafScale, leafScaleX, leafScaleT, leafScaleV,
-                                                            cp.co, cp.quat, cp.offset, len(leafVerts),
-                                                            leafDownAngle, leafDownAngleV, leafRotate,
-                                                            leafRotateV, oldRot, bend, leaves, leafShape,
-                                                            leafangle, horzLeaves
-                                                            )
-                leafVerts.extend(vertTemp)
-                leafFaces.extend(faceTemp)
-                leafNormals.extend(normal)
+                oldRot = CreateLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV,
+                            cp.co, cp.quat, cp.offset, len(leafVerts),
+                            leafDownAngle, leafDownAngleV, leafRotate,
+                            leafRotateV, oldRot, bend, leaves, leafShape,
+                            leafangle, horzLeaves, ori_mesh, leaf_bmesh, props.leaf_flipUVrandom)
                 leafP.append(cp)
 
         # Create the leaf mesh and object, add geometry using from_pydata,
@@ -1824,32 +1850,11 @@ def addTree(treeOb):
         bpy.context.scene.objects.link(leafObj)
         leafObj.select = True
         leafObj.parent = treeOb
-        leafMesh.from_pydata(leafVerts, (), leafFaces)
+        leaf_bmesh.to_mesh(leafMesh)
+        leaf_bmesh.free()
+        del leaf_bmesh
+        del ori_mesh
 
-        # set vertex normals for dupliVerts
-        if leafShape == 'dVert':
-            leafMesh.vertices.foreach_set('normal', leafNormals)
-
-        # enable duplication
-        if leafShape == 'dFace':
-            leafObj.dupli_type = "FACES"
-            leafObj.use_dupli_faces_scale = True
-            leafObj.dupli_faces_scale = 10.0
-            try:
-                if leafDupliObj not in "NONE":
-                    bpy.data.objects[leafDupliObj].parent = leafObj
-            except KeyError:
-                pass
-        elif leafShape == 'dVert':
-            leafObj.dupli_type = "VERTS"
-            leafObj.use_dupli_vertices_rotation = True
-            try:
-                if leafDupliObj not in "NONE":
-                    bpy.data.objects[leafDupliObj].parent = leafObj
-            except KeyError:
-                pass
-
-        # add leaf UVs
         leafObj.select = True
         treeOb.select = False
         bpy.context.scene.objects.active = leafObj
@@ -1857,45 +1862,6 @@ def addTree(treeOb):
         if(len(materials) > 1): leafObj.material_slots[0].material = materials[1]
 
         treeOb.select = True
-        if leafShape == 'rect':
-            leafMesh.uv_textures.new("UVMap")
-            uvlayer = leafMesh.uv_layers.active.data
-
-            u1 = (0.5 * (1 - leafScaleX)) * props.leave_UVSize[0]
-            u2 = (1 - u1) * props.leave_UVSize[1]
-
-            if props.leaf_flipUV :
-                temp = u2
-                u2 = u1
-                u1 = temp
-
-            for i in range(0, len(leafFaces)):
-                if props.leaf_flipUVrandom and random() > 0.5:
-                    temp = u2
-                    u2 = u1
-                    u1 = temp
-                uvlayer[i * 4 + 0].uv = Vector((u2, 0))
-                uvlayer[i * 4 + 1].uv = Vector((u2, 1))
-                uvlayer[i * 4 + 2].uv = Vector((u1, 1))
-                uvlayer[i * 4 + 3].uv = Vector((u1, 0))
-
-        elif leafShape == 'hex':
-            leafMesh.uv_textures.new("UVMap")
-            uvlayer = leafMesh.uv_layers.active.data
-
-            u1 = .5 * (1 - leafScaleX)
-            u2 = 1 - u1
-
-            for i in range(0, int(len(leafFaces) / 2)):
-                uvlayer[i * 8 + 0].uv = Vector((.5, 0))
-                uvlayer[i * 8 + 1].uv = Vector((u1, 1 / 3))
-                uvlayer[i * 8 + 2].uv = Vector((u1, 2 / 3))
-                uvlayer[i * 8 + 3].uv = Vector((.5, 1))
-
-                uvlayer[i * 8 + 4].uv = Vector((.5, 0))
-                uvlayer[i * 8 + 5].uv = Vector((.5, 1))
-                uvlayer[i * 8 + 6].uv = Vector((u2, 2 / 3))
-                uvlayer[i * 8 + 7].uv = Vector((u2, 1 / 3))
 
         leafMesh.validate()
         leafObj.select = True
