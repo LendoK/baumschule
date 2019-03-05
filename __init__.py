@@ -317,6 +317,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
         else:
             self.do_update = False
 
+
     def no_update_tree(self, context):
         self.do_update = False
 
@@ -794,7 +795,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
     leafShape = EnumProperty(
         name='Leaf Shape',
         description='The shape of the leaves',
-        items=(('hex', 'Hexagonal', 'hex'), ('rect', 'Rectangular', 'rect'), ('dVert', 'DupliVerts', 'dVert')),
+        items=(('hex', 'Hexagonal', 'hex'), ('rect', 'Rectangular', 'rect'), ('dVert', 'Leaf Object', 'dVert')),
         default='rect', update=update_leaves
         )
     leafDupliObj = EnumProperty(
@@ -1156,7 +1157,10 @@ class tree_tree_props(bpy.types.PropertyGroup):
             box = box.column()
             box.enabled = self.showLeaves
             box.prop(self, 'leafShape')
-            box.prop(self, 'leafDupliObj')
+            row = box.row()
+            row.enabled= self.leafShape == 'dVert'
+            #  ('dVert', 'DupliVerts', 'dVert')
+            row.prop(self, 'leafDupliObj')
             box.prop(self, 'leaves')
             box.prop(self, 'leafDist')
 

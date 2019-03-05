@@ -32,7 +32,7 @@ from math import pi, sin, degrees, radians, atan2, copysign, cos, acos
 from math import floor
 from random import random, uniform, seed, choice, getstate, setstate, randint
 from collections import deque, OrderedDict
-
+from copy import deepcopy
 tau = 2 * pi
 
 # Initialise the split error and axis vectors
@@ -309,16 +309,17 @@ def interpStem(stem, tVals, lPar, parRad, maxOffset, baseSize):
                     )
 
     # add stem at tip
-    index = numSegs - 1
-    coord = points[-1].co
-    quat = (points[-1].handle_right - points[-1].co).to_track_quat('Z', 'Y')
-    radius = points[-1].radius
-    tempList.append(
-                childPoint(
-                        coord, quat, (parRad, radius), 1, 1, lPar,
-                        'bone' + (str(stem.splN).rjust(3, '0')) + '.' + (str(index).rjust(3, '0'))
+    if(tempList and numSegs > 0 and points):
+        index = numSegs - 1
+        coord = deepcopy(points[-1].co)
+        quat = (points[-1].handle_right - points[-1].co).to_track_quat('Z', 'Y')
+        radius = points[-1].radius
+        tempList.append(
+                    childPoint(
+                            coord, quat, (parRad, radius), 1, 1, lPar,
+                            'bone' + (str(stem.splN).rjust(3, '0')) + '.' + (str(index).rjust(3, '0'))
+                            )
                         )
-                    )
 
     return tempList
 
@@ -1372,12 +1373,12 @@ def perform_pruning(baseSize, baseSplits, childP, cu, currentMax, currentMin, cu
                 if (k == int(curveRes[n] / 2 + 0.5)) and (curveBack[n] != 0):
                     spl.curv += 2 * (curveBack[n] / curveRes[n])  # was -4 *
 
-                if(random() > deadBranch_C[n]):
-                    growSpline(
-                            n, spl, numSplit, splitAngle[n], splitAngleV[n], splineList,
-                            handles, splineToBone, closeTip, kp, splitHeight, attractOut[n],
-                            stemsegL, lengthV[n], taperCrown, boneStep, rotate, rotateV
-                            )
+                # if(random() > deadBranch_C[n]):
+                growSpline(
+                        n, spl, numSplit, splitAngle[n], splitAngleV[n], splineList,
+                        handles, splineToBone, closeTip, kp, splitHeight, attractOut[n],
+                        stemsegL, lengthV[n], taperCrown, boneStep, rotate, rotateV
+                        )
 
         # If pruning is enabled then we must to the check to see if the end of the spline is within the evelope
         if prune:
@@ -1491,6 +1492,7 @@ def findtaper(length, taper, shape, shapeS, levels, customShape):
 
 
 def addTree(treeOb):
+    start_time = time.time()
     # for ob in bpy.data.objects:
     #     ob.select = False
 
@@ -1811,15 +1813,6 @@ def addTree(treeOb):
         leafDupliFaces = []
         leafDupliUVs = []
         ori_mesh = GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, props.leave_UVSize, props.leaf_flipUV)
-        if leafShape == 'dVert':
-            try:
-                if leafDupliObj not in "NONE":
-                    leafDupliVerts = [Vector((v.co.x, v.co.y, v.co.z)) for v in bpy.data.objects[leafDupliObj].data.vertices]
-                    leafDupliFaces = [list(p.vertices) for p in bpy.data.objects[leafDupliObj].data.polygons]
-                    leafDupliUVs = [ul.uv for ul in  bpy.data.objects[leafDupliObj].data.uv_layers.active.data]
-            except KeyError:
-                pass
-
         oldRot = 0.0
         n = min(3, n + 1)
         # For each of the child points we add leaves
@@ -1890,3 +1883,5 @@ def addTree(treeOb):
                     leaves, levelCount, splineToBone, treeOb, wind, gust, gustF, af1,
                     af2, af3, leafAnim, loopFrames, previewArm, armLevels, makeMesh, boneStep
                     )
+
+    print("Tree creation in {0}s".format(time.time() - start_time))
