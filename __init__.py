@@ -1244,13 +1244,16 @@ def menu_func(self, context):
     self.layout.operator(NewTree.bl_idname, text="Baumschule", icon_value=custom_icons["custom_icon"].icon_id)
 
 
+def getScriptDir():
+    for p in bpy.utils.script_paths():
+        sp = os.path.join(p, 'addons', 'baumschule')
+        if os.path.exists(sp):
+            return sp
+
 def register():
     global custom_icons
     custom_icons = bpy.utils.previews.new()
-    script_path = bpy.utils.user_resource('SCRIPTS', "addons")
-    icons_dir = os.path.join(os.path.dirname(
-        script_path), "addons", "baumschule", "icons")
-    custom_icons.load("custom_icon", os.path.join(icons_dir, "icon_baum.png"), 'IMAGE')
+    custom_icons.load("custom_icon", os.path.join(getScriptDir(), "icons", "icon_baum.png"), 'IMAGE')
     bpy.utils.register_module(__name__)
     bpy.types.Object.tree_props = bpy.props.PointerProperty(type=tree_tree_props)
     bpy.types.INFO_MT_mesh_add.append(menu_func)
