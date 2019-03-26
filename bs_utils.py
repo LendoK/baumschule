@@ -492,7 +492,7 @@ def growSpline(n, stem, numSplit, splitAng, splitAngV, splineList,
             end_co = stem.p.co.copy()
 
             # Add the new point and adjust its coords, handles and radius
-            newSpline.bezier_points.add()
+            newSpline.bezier_points.add(1)
             newPoint = newSpline.bezier_points[-1]
             (newPoint.co, newPoint.handle_left_type, newPoint.handle_right_type) = (end_co + dirVec, hType, hType)
             newPoint.radius = (
@@ -564,7 +564,7 @@ def growSpline(n, stem, numSplit, splitAng, splitAngV, splineList,
     # Get the end point position
     end_co = stem.p.co.copy()
 
-    stem.spline.bezier_points.add()
+    stem.spline.bezier_points.add(1)
     newPoint = stem.spline.bezier_points[-1]
     (newPoint.co, newPoint.handle_left_type, newPoint.handle_right_type) = (end_co + dirVec, hType, hType)
     newPoint.radius = stem.radS * (1 - (stem.seg + 1) / stem.segMax) + \
@@ -598,7 +598,7 @@ def GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, leave_UVSize, leaf_
     leafTemplate = bpy.data.meshes.new('leaves')
     leafTemplate.from_pydata(verts, (), faces)
     if leafShape == 'rect':
-        leafTemplate.uv_textures.new("UVMap")
+        leafTemplate.uv_layers.new(name="UVMap")
         uvlayer = leafTemplate.uv_layers.active.data
 
         u1 = (0.5 * (1 - leafScaleX)) * leave_UVSize[0]
@@ -620,7 +620,7 @@ def GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, leave_UVSize, leaf_
         uvlayer[3].uv = Vector((u1, 0))
 
     elif leafShape == 'hex':
-        leafTemplate.uv_textures.new("UVMap")
+        leafTemplate.uv_layers.new("UVMap")
         uvlayer = leafTemplate.uv_layers.active.data
 
         u1 = .5 * (1 - leafScaleX)
@@ -706,22 +706,22 @@ def CreateLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
 
 
     rot_mat2 = Matrix.Rotation(radians(180), 3, 'Z')
-    rot_mat2 *= Matrix.Rotation(radians(-leafangle), 3, 'X')
+    rot_mat2 = rot_mat2 @ Matrix.Rotation(radians(-leafangle), 3, 'X')
     if rotate < 0:
-        rot_mat2 *= Matrix.Rotation(radians(90), 3, 'Z')
+        rot_mat2 @= Matrix.Rotation(radians(90), 3, 'Z')
         if oldRot < 0:
-            rot_mat2 *= Matrix.Rotation(radians(180), 3, 'Z')
+            rot_mat2 @= Matrix.Rotation(radians(180), 3, 'Z')
 
     if (leaves > 0) and (rotate > 0) and horzLeaves:
         nRotMat = Matrix.Rotation(-oldRot + rotate, 3, 'Z')
 
     m2 = quat.to_matrix()
-    final_rot_mat =  m2.to_3x3()*rot_mat* downRotMat *nRotMat *rot_mat2
+    final_rot_mat =  m2.to_3x3() @ rot_mat @ downRotMat @ nRotMat @ rot_mat2
     # v.rotate(rotMat)
     # v.rotate(quat)
     if (bend != 0.0) and (leaves > 0):
         # Correct the rotation
-        final_rot_mat *= rotateZ * rotateZOrien * rotateX * rotateZOrien2
+        final_rot_mat @= rotateZ @ rotateZOrien @ rotateX @ rotateZOrien2
 
 
 
@@ -732,11 +732,11 @@ def CreateLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
     #scaling
     leafScale = leafScale * uniform(1 - leafScaleV, 1 + leafScaleV)
     scale_mat = Matrix.Scale(leafScale*leafScaleX * fl, 4, Vector((1.0, 0.0, 0.0)))
-    scale_mat = scale_mat * Matrix.Scale(leafScale, 4, Vector((0.0, 1.0, 0.0)))
-    scale_mat = scale_mat * Matrix.Scale(leafScale, 4, Vector((0.0, 0.0, 1.0)))
+    scale_mat = scale_mat @ Matrix.Scale(leafScale, 4, Vector((0.0, 1.0, 0.0)))
+    scale_mat = scale_mat @ Matrix.Scale(leafScale, 4, Vector((0.0, 0.0, 1.0)))
 
 
-    trans_mat = loc_mat * final_rot_mat.to_4x4() * scale_mat
+    trans_mat = loc_mat @ final_rot_mat.to_4x4() @ scale_mat
 
 
     ori_mesh.transform(trans_mat)
@@ -1504,7 +1504,8 @@ def addTree(treeOb):
     # treeOb.select = True
     # bpy.context.scene.objects.active = treeOb
     treeOb.show_bounds = True
-    treeOb.draw_type = 'TEXTURED'
+    treeOb.show_texture_space = True
+
     materials = None
     oldmesh = None
     if(treeOb.type == 'MESH'):
@@ -1673,7 +1674,7 @@ def addTree(treeOb):
         (newPoint.handle_right_type, newPoint.handle_left_type) = (enHandle, enHandle)
         # Set the coordinates by varying the z value, envelope will be aligned to the x-axis
         for c in range(enNum):
-            newSpline.bezier_points.add()
+            newSpline.bezier_points.add(1)
             newPoint = newSpline.bezier_points[-1]
             ratioVal = (c + 1) / (enNum)
             zVal = scaleVal - scaleVal * (1 - pruneBase) * ratioVal
@@ -1691,7 +1692,7 @@ def addTree(treeOb):
         (newPoint.handle_right_type, newPoint.handle_left_type) = (enHandle, enHandle)
         # Create a second envelope but this time on the y-axis
         for c in range(enNum):
-            newSpline.bezier_points.add()
+            newSpline.bezier_points.add(1)
             newPoint = newSpline.bezier_points[-1]
             ratioVal = (c + 1) / (enNum)
             zVal = scaleVal - scaleVal * (1 - pruneBase) * ratioVal
@@ -1795,7 +1796,7 @@ def addTree(treeOb):
     if props.convertToMesh:
 
         bpy.ops.object.convert(target='MESH')
-        bpy.context.object.data.uv_textures[0].name = "UVMap"
+        bpy.context.object.data.uv_layers[0].name = "UVMap"
         if props.rotateUV or props.UVSize[0] > 1.0 or props.UVSize[1] > 1.0:
             for l in treeOb.data.uv_layers.active.data:
                 if props.rotateUV:
@@ -1840,25 +1841,25 @@ def addTree(treeOb):
         # edges are currently added by validating the mesh which isn't great
         leafMesh = bpy.data.meshes.new('leaves')
         leafObj = bpy.data.objects.new('leaves', leafMesh)
-        bpy.context.scene.objects.link(leafObj)
-        leafObj.select = True
+        bpy.context.scene.collection.objects.link(leafObj)
+        leafObj.select_set(True)
         leafObj.parent = treeOb
         leaf_bmesh.to_mesh(leafMesh)
         leaf_bmesh.free()
         del leaf_bmesh
         del ori_mesh
 
-        leafObj.select = True
-        treeOb.select = False
-        bpy.context.scene.objects.active = leafObj
+        leafObj.select_set(True)
+        treeOb.select_set(False)
+        bpy.context.view_layer.objects.active= leafObj
         bpy.ops.object.material_slot_add()
         if(len(materials) > 1): leafObj.material_slots[0].material = materials[1]
 
-        treeOb.select = True
+        treeOb.select_set(True)
 
         leafMesh.validate()
-        leafObj.select = True
-        bpy.context.scene.objects.active = treeOb
+        leafObj.select_set(True)
+        bpy.context.view_layer.objects.active = treeOb
         bpy.ops.object.join()
         bpy.data.meshes.remove(leafMesh)
 
