@@ -1504,7 +1504,6 @@ def addTree(treeOb):
     # treeOb.select = True
     # bpy.context.scene.objects.active = treeOb
     treeOb.show_bounds = True
-    treeOb.show_texture_space = True
 
     materials = None
     oldmesh = None

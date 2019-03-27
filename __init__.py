@@ -281,6 +281,7 @@ class AddTree(Panel):
     bl_space_type = "VIEW_3D"
     bl_label = "Baumschule:"
     bl_region_type = "TOOLS"
+    bl_context = "objectmode"
 
 
     def draw(self, context):
