@@ -583,6 +583,7 @@ def growSpline(n, stem, numSplit, splitAng, splitAngV, splineList,
 def GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, leave_UVSize, leaf_flipUV):
     if leafShape == 'dVert':
         return bpy.data.objects[leafDupliObj].data.copy()
+
     elif leafShape == 'hex':
         verts = [
             Vector((0, 0, 0)), Vector((0.5, 0, 1 / 3)), Vector((0.5, 0, 2 / 3)),
@@ -590,36 +591,10 @@ def GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, leave_UVSize, leaf_
             ]
         edges = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [0, 3]]
         faces = [[0, 1, 2, 3], [0, 3, 4, 5]]
-    elif leafShape == 'rect':
-        # verts = [Vector((1, 0, 0)), Vector((1, 0, 1)), Vector((-1, 0, 1)), Vector((-1, 0, 0))]
-        verts = [Vector((.5, 0, 0)), Vector((.5, 0, 1)), Vector((-.5, 0, 1)), Vector((-.5, 0, 0))]
-        edges = [[0, 1], [1, 2], [2, 3], [3, 0]]
-        faces = [[0, 1, 2, 3]]
-    leafTemplate = bpy.data.meshes.new('leaves')
-    leafTemplate.from_pydata(verts, (), faces)
-    if leafShape == 'rect':
-        leafTemplate.uv_layers.new(name="UVMap")
-        uvlayer = leafTemplate.uv_layers.active.data
 
-        u1 = (0.5 * (1 - leafScaleX)) * leave_UVSize[0]
-        u2 = (1 - u1) * leave_UVSize[1]
+        leafTemplate = bpy.data.meshes.new('leaves')
+        leafTemplate.from_pydata(verts, (), faces)
 
-        if leaf_flipUV :
-            temp = u2
-            u2 = u1
-            u1 = temp
-
-        # for i in range(0, len(faces)):
-            # if props.leaf_flipUVrandom and random() > 0.5:
-            #     temp = u2
-            #     u2 = u1
-            #     u1 = temp
-        uvlayer[0].uv = Vector((u2, 0))
-        uvlayer[1].uv = Vector((u2, 1))
-        uvlayer[2].uv = Vector((u1, 1))
-        uvlayer[3].uv = Vector((u1, 0))
-
-    elif leafShape == 'hex':
         leafTemplate.uv_layers.new("UVMap")
         uvlayer = leafTemplate.uv_layers.active.data
 
@@ -636,7 +611,45 @@ def GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, leave_UVSize, leaf_
             uvlayer[i * 8 + 5].uv = Vector((.5, 1))
             uvlayer[i * 8 + 6].uv = Vector((u2, 2 / 3))
             uvlayer[i * 8 + 7].uv = Vector((u2, 1 / 3))
-    return leafTemplate
+        return leafTemplate
+
+    elif leafShape == 'rect':
+        verts = [Vector((.5, 0, 0)), Vector((.5, 0, 1)), Vector((-.5, 0, 1)), Vector((-.5, 0, 0))]
+        edges = [[0, 1], [1, 2], [2, 3], [3, 0]]
+        faces = [[0, 1, 2, 3]]
+
+        leafTemplate = bpy.data.meshes.new('leaves')
+        leafTemplate.from_pydata(verts, (), faces)
+        leafTemplate.uv_layers.new(name="UVMap")
+        uvlayer = leafTemplate.uv_layers.active.data
+
+        u1 = (0.5 * (1 - leafScaleX)) * leave_UVSize[0]
+        u2 = (1 - u1) * leave_UVSize[1]
+
+        if leaf_flipUV :
+            temp = u2
+            u2 = u1
+            u1 = temp
+
+        uvlayer[0].uv = Vector((u2, 0))
+        uvlayer[1].uv = Vector((u2, 1))
+        uvlayer[2].uv = Vector((u1, 1))
+        uvlayer[3].uv = Vector((u1, 0))
+        return leafTemplate
+
+    elif leafShape == "tri":
+        verts = [Vector((0, 0, -1)), Vector((1, 0, 1)), Vector((-1, 0, 1))]
+        edges = [[0, 1], [1, 2], [2, 3]]
+        faces = [[0, 1, 2]]
+        leafTemplate = bpy.data.meshes.new('leaves')
+        leafTemplate.from_pydata(verts, (), faces)
+        leafTemplate.uv_layers.new(name="UVMap")
+        uvlayer = leafTemplate.uv_layers.active.data
+        uvlayer[0].uv = Vector((0.5, -1))
+        uvlayer[1].uv = Vector((-0.5, 1))
+        uvlayer[2].uv = Vector((1.5, 1))
+        return leafTemplate
+
 
 def CreateLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
                 offset, index, downAngle, downAngleV, rotate, rotateV, oldRot,
@@ -1493,16 +1506,7 @@ def findtaper(length, taper, shape, shapeS, levels, customShape):
 
 def addTree(treeOb):
     start_time = time.time()
-    # for ob in bpy.data.objects:
-    #     ob.select = False
-
     # # Initialise the tree object and curve and adjust the settings
-    # cu = bpy.data.curves.new('tree', 'CURVE')
-    # treeOb = bpy.data.objects.new('tree', cu)
-    # bpy.context.scene.objects.link(treeOb)
-
-    # treeOb.select = True
-    # bpy.context.scene.objects.active = treeOb
     treeOb.show_bounds = True
 
     materials = None
@@ -1528,8 +1532,6 @@ def addTree(treeOb):
     seed(props.seed)
 
     # Set all other variables
-    levels = props.levels
-    length = props.length
     lengthV = props.lengthV
     taperCrown = props.taperCrown
     branches = props.branches
@@ -1582,17 +1584,6 @@ def addTree(treeOb):
     leafRotate = radians(props.leafRotate)
     leafRotateV = radians(props.leafRotateV)
     leafScale = props.leafScale
-    leafScaleX = props.leafScaleX
-    leafScaleT = props.leafScaleT
-    leafScaleV = props.leafScaleV
-    leafShape = props.leafShape
-    leafDupliObj = props.leafDupliObj
-    bend = props.bend
-    leafangle = props.leafangle
-    horzLeaves = props.horzLeaves
-    leafDist = int(props.leafDist)
-    bevelRes = props.bevelRes
-    resU = props.resU
 
     useArm = props.useArm
     previewArm = props.previewArm
@@ -1626,9 +1617,9 @@ def addTree(treeOb):
 
     # taper
     if autoTaper:
-        taper = findtaper(length, taper, shape, shapeS, levels, customShape)
+        taper = findtaper(props.length, taper, shape, shapeS, props.levels, customShape)
         # pLevels = branches[0]
-        # taper = findtaper(length, taper, shape, shapeS, pLevels, customShape)
+        # taper = findtaper(props.length, taper, shape, shapeS, pLevels, customShape)
 
     leafObj = None
 
@@ -1651,7 +1642,7 @@ def addTree(treeOb):
     cu.dimensions = '3D'
     cu.fill_mode = 'FULL'
     cu.bevel_depth = bevelDepth
-    cu.bevel_resolution = bevelRes
+    cu.bevel_resolution = props.bevelRes
     cu.use_uv_as_generated = True
 
     # Fix the scale of the tree now
@@ -1711,8 +1702,8 @@ def addTree(treeOb):
     splineToBone = deque([''])
     addsplinetobone = splineToBone.append
 
-    # Each of the levels needed by the user we grow all the splines
-    for n in range(levels):
+    # Each of the props.levels needed by the user we grow all the splines
+    for n in range(props.levels):
         storeN = n
         stemList = deque()
         addstem = stemList.append
@@ -1722,27 +1713,27 @@ def addTree(treeOb):
         splitError = 0.0
 
         # closeTip only on last level
-        closeTipp = all([(n == levels - 1), closeTip])
+        closeTipp = all([(n == props.levels - 1), closeTip])
 
 
         # If this is the first level of growth (the trunk) then we need some special work to begin the tree
         if n == 0:
-            kickstart_trunk(addstem, levels, leaves, branches, cu, curve, curveRes,
-                            curveV, attractUp, length, lengthV, ratio, ratioPower, resU,
+            kickstart_trunk(addstem, props.levels, leaves, branches, cu, curve, curveRes,
+                            curveV, attractUp, props.length, lengthV, ratio, ratioPower, props.resU,
                             scale0, scaleV0, scaleVal, taper, minRadius, rootFlare)
         # If this isn't the trunk then we may have multiple stem to initialise
         else:
             # For each of the points defined in the list of stem starting points we need to grow a stem.
             fabricate_stems(addsplinetobone, addstem, baseSize, branches, childP, cu, curve, curveBack,
-                            curveRes, curveV, attractUp, downAngle, downAngleV, leafDist, leaves, length, lengthV,
-                            levels, n, ratioPower, resU, rotate, rotateV, scaleVal, shape, storeN,
+                            curveRes, curveV, attractUp, downAngle, downAngleV, int(props.leafDist), leaves, props.length, lengthV,
+                            props.levels, n, ratioPower, props.resU, rotate, rotateV, scaleVal, shape, storeN,
                             taper, shapeS, minRadius, radiusTweak, customShape, rMode, segSplits,
                             useOldDownAngle, useParentAngle, boneStep)
 
         # change base size for each level
         if n > 0:
             baseSize *= baseSize_s  # decrease at each level
-        if (n == levels - 1):
+        if (n == props.levels - 1):
             baseSize = 0
 
         childP = []
@@ -1779,7 +1770,7 @@ def addTree(treeOb):
                                         originalSeg, prune, prunePowerHigh, prunePowerLow, pruneRatio,
                                         pruneWidth, pruneBase, pruneWidthPeak, randState, ratio, scaleVal,
                                         segSplits, splineToBone, splitAngle, splitAngleV, st, startPrune,
-                                        branchDist, length, splitByLen, closeTipp, nrings, splitBias,
+                                        branchDist, props.length, splitByLen, closeTipp, nrings, splitBias,
                                         splitHeight, attractOut, rMode, lengthV, taperCrown, boneStep,
                                         rotate, rotateV, deadBranch
                                         )
@@ -1812,7 +1803,7 @@ def addTree(treeOb):
         leafDupliVerts = []
         leafDupliFaces = []
         leafDupliUVs = []
-        ori_mesh = GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, props.leave_UVSize, props.leaf_flipUV)
+        ori_mesh = GetLeafMeshTemplate(props.leafShape, props.leafDupliObj, props.leafScaleX, props.leave_UVSize, props.leaf_flipUV)
         oldRot = 0.0
         n = min(3, n + 1)
         # For each of the child points we add leaves
@@ -1821,19 +1812,19 @@ def addTree(treeOb):
             if leaves < 0:
                 oldRot = -leafRotate / 2
                 for g in range(abs(leaves)):
-                    oldRot = CreateLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV,
+                    oldRot = CreateLeafMesh(leafScale, props.leafScaleX, props.leafScaleT, props.leafScaleV,
                             cp.co, cp.quat, cp.offset, len(leafVerts),
                             leafDownAngle, leafDownAngleV, leafRotate,
-                            leafRotateV, oldRot, bend, leaves, leafShape,
-                            leafangle, horzLeaves, ori_mesh, leaf_bmesh, props.leaf_flipUVrandom)
+                            leafRotateV, oldRot, prps.bend, leaves, props.leafShape,
+                            props.leafangle, props.horzLeaves, ori_mesh, leaf_bmesh, props.leaf_flipUVrandom)
                     leafP.append(cp)
             # Otherwise just add the leaves like splines
             else:
-                oldRot = CreateLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV,
+                oldRot = CreateLeafMesh(leafScale, props.leafScaleX, props.leafScaleT, props.leafScaleV,
                             cp.co, cp.quat, cp.offset, len(leafVerts),
                             leafDownAngle, leafDownAngleV, leafRotate,
-                            leafRotateV, oldRot, bend, leaves, leafShape,
-                            leafangle, horzLeaves, ori_mesh, leaf_bmesh, props.leaf_flipUVrandom)
+                            leafRotateV, oldRot, props.bend, leaves, props.leafShape,
+                            props.leafangle, props.horzLeaves, ori_mesh, leaf_bmesh, props.leaf_flipUVrandom)
                 leafP.append(cp)
 
         # Create the leaf mesh and object, add geometry using from_pydata,
@@ -1863,20 +1854,20 @@ def addTree(treeOb):
         bpy.data.meshes.remove(leafMesh)
 
 
-    leafVertSize = {'hex': 6, 'rect': 4, 'dFace': 4, 'dVert': 1}[leafShape]
-
-    armLevels = min(armLevels, levels)
-    armLevels -= 1
-
-    # unpack vars from splineToBone
-    splineToBone1 = splineToBone
-    splineToBone = [s[0] if len(s) > 1 else s for s in splineToBone1]
-    isend = [s[1] if len(s) > 1 else False for s in splineToBone1]
-    issplit = [s[2] if len(s) > 2 else False for s in splineToBone1]
-    splitPidx = [s[3] if len(s) > 2 else 0 for s in splineToBone1]
-
     # If we need an armature we add it
     if useArm:
+
+        leafVertSize = {'hex': 6, 'rect': 4, 'dFace': 4, 'dVert': 1, 'tri': 3}[props.leafShape]
+
+        armLevels = min(armLevels, props.levels)
+        armLevels -= 1
+
+        # unpack vars from splineToBone
+        splineToBone1 = splineToBone
+        splineToBone = [s[0] if len(s) > 1 else s for s in splineToBone1]
+        isend = [s[1] if len(s) > 1 else False for s in splineToBone1]
+        issplit = [s[2] if len(s) > 2 else False for s in splineToBone1]
+        splitPidx = [s[3] if len(s) > 2 else 0 for s in splineToBone1]
         # Create the armature and objects
         create_armature(
                     armAnim, leafP, cu, frameRate, leafMesh, leafObj, leafVertSize,

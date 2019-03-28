@@ -796,7 +796,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
     leafShape: EnumProperty(
         name='Leaf Shape',
         description='The shape of the leaves',
-        items=(('hex', 'Hexagonal', 'hex'), ('rect', 'Rectangular', 'rect'), ('dVert', 'Leaf Object', 'dVert')),
+        items=(('hex', 'Hexagonal', 'hex'), ('rect', 'Rectangular', 'rect'), ('tri', 'Triangle', 'tri'),('dVert', 'Leaf Object', 'dVert')),
         default='rect', update=update_leaves
         )
     leafDupliObj: EnumProperty(

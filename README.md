@@ -13,5 +13,6 @@ It’s intention is to improve the process of creating a game ready asset. Apply
     * fast mesh conversion
     * branches polygon reduction
 * basic UV editing for branches and leafs
+* custom leaf shape
 ## Issues
 * pruning, armature, animations and save presets not ported yet
