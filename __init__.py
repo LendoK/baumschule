@@ -138,7 +138,7 @@ def getPresetpaths():
 
 class ExportData(Operator):
     """This operator handles writing presets to file"""
-    bl_idname = 'sapling.exportdata'
+    bl_idname = 'baumschule.exportdata'
     bl_label = 'Export Preset'
 
     data: StringProperty()
@@ -146,7 +146,8 @@ class ExportData(Operator):
     def execute(self, context):
         # Unpack some data from the input
         filename, overwrite = eval(self.data)
-        data = str(context.active_object.tree_props.get_property_dict())
+        data_dict = context.active_object.tree_props.get_property_dict()
+        data = str(data_dict)
         """
         try:
             # Check whether the file exists by trying to open it.
@@ -190,7 +191,7 @@ class ExportData(Operator):
 
 class ImportData(Operator):
     """This operator handles importing existing presets"""
-    bl_idname = "sapling.importdata"
+    bl_idname = "baumschule.importdata"
     bl_label = "Import Preset"
 
     filename: StringProperty()
@@ -233,7 +234,7 @@ class ImportData(Operator):
 class PresetMenu(Menu):
     """Create the preset menu by finding all preset files
     in the preset directory"""
-    bl_idname = "SAPLING_MT_preset"
+    bl_idname = "BAUMSCHULE_MT_preset"
     bl_label = "Presets"
 
     def draw(self, context):
@@ -243,7 +244,7 @@ class PresetMenu(Menu):
         layout = self.layout
         # Append all to the menu
         for p in presets:
-            layout.operator("sapling.importdata", text=p[:-3]).filename = p
+            layout.operator("baumschule.importdata", text=p[:-3]).filename = p
 
 class NewTree(Operator):
     bl_idname = "mesh.newtree"
@@ -302,22 +303,18 @@ class tree_tree_props(bpy.types.PropertyGroup):
     def update_tree(self, context):
         if not useSet:
             bs_utils.addTree(context.object)
-        self.do_update = True
 
     def update_leaf_shape(self, context):
         if self.leafShape != "dVert":
             self.update_leaves(context)
 
     def update_leaves(self, context):
-        if self.showLeaves:
-            self.do_update = True
+        if self.showLeaves and not useSet:
             bs_utils.addTree(context.object)
-        else:
-            self.do_update = False
-
 
     def no_update_tree(self, context):
-        self.do_update = False
+        # self.do_update = False
+        pass
 
 
     def load_settings(self, context):
@@ -326,14 +323,16 @@ class tree_tree_props(bpy.types.PropertyGroup):
             self.showLeaves = False
             for a, b in settings.items():
                 # print("prop: {0}, wert: {1}".format(a, b))
-                if getattr(self, a):
+                if hasattr(self, a):
                     setattr(self, a, b)
+                else:
+                    print("could not set missing prop: {0}, value {1}".format(a, b))
             if self.limitImport:
                 setattr(self, 'levels', min(settings['levels'], 2))
                 setattr(self, 'showLeaves', False)
         self.bevel = True
-        useSet = False
         bs_utils.addTree(context.object)
+        useSet = False
 
     istree: BoolProperty(
         name='istree',
@@ -387,8 +386,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
         name='Levels',
         description='Number of recursive branches (Levels)',
         min=1,
-        max=6,
-        soft_max=4,
+        max=4,
         default=3, update=update_tree
         )
     length: FloatVectorProperty(
@@ -588,8 +586,6 @@ class tree_tree_props(bpy.types.PropertyGroup):
     splitBias: FloatProperty(
         name='splitBias',
         description='Put more splits at the top or bottom of the tree',
-        soft_min=-2.0,
-        soft_max=2.0,
         default=0.0, update=update_tree
         )
     ratio: FloatProperty(
@@ -738,7 +734,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
         min=3,
         # soft_min=20,
         # soft_max=20,
-        max=30,
+        max=50,
         default=15, update=update_tree
         )
     leafDownAngle: FloatProperty(
@@ -1061,10 +1057,10 @@ class tree_tree_props(bpy.types.PropertyGroup):
             row = box.row()
             row.prop(self, 'presetName')
             # Send the data dict and the file name to the exporter
-            row.operator('sapling.exportdata').data = repr([self.presetName, self.overwrite])
+            row.operator('baumschule.exportdata').data = repr([self.presetName, self.overwrite])
             box.label(text="Load Preset:")
             row = box.row()
-            row.menu('SAPLING_MT_preset', text='Load Preset')
+            row.menu('BAUMSCHULE_MT_preset', text='Load Preset')
 
         elif self.chooseSet == '1':
             box = layout.box()
