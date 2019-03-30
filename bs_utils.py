@@ -581,10 +581,8 @@ def growSpline(n, stem, numSplit, splitAng, splitAngV, splineList,
     # return splineList
 
 def GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, leave_UVSize, leaf_flipUV):
-    if leafShape == 'dVert':
-        return bpy.data.objects[leafDupliObj].data.copy()
 
-    elif leafShape == 'hex':
+    if leafShape == 'hex':
         verts = [
             Vector((0, 0, 0)), Vector((0.5, 0, 1 / 3)), Vector((0.5, 0, 2 / 3)),
             Vector((0, 0, 1)), Vector((-0.5, 0, 2 / 3)), Vector((-0.5, 0, 1 / 3))
@@ -595,7 +593,7 @@ def GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, leave_UVSize, leaf_
         leafTemplate = bpy.data.meshes.new('leaves')
         leafTemplate.from_pydata(verts, (), faces)
 
-        leafTemplate.uv_layers.new("UVMap")
+        leafTemplate.uv_layers.new(name="UVMap")
         uvlayer = leafTemplate.uv_layers.active.data
 
         u1 = .5 * (1 - leafScaleX)
@@ -650,11 +648,18 @@ def GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, leave_UVSize, leaf_
         uvlayer[2].uv = Vector((1.5, 1))
         return leafTemplate
 
+    elif leafShape == 'dVert':
+        if leafDupliObj in bpy.data.objects:
+            return bpy.data.objects[leafDupliObj].data.copy()
+        else:
+            return None
 
 def CreateLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
                 offset, index, downAngle, downAngleV, rotate, rotateV, oldRot,
                 bend, leaves, leafShape, leafangle, horzLeaves, ori_mesh, leaf_bmesh, leaf_flipUVrandom):
     #location
+    if not ori_mesh:
+        return
     loc_mat = Matrix.Translation(loc)
 
     if leaves < 0:
@@ -725,11 +730,13 @@ def CreateLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
         if oldRot < 0:
             rot_mat2 @= Matrix.Rotation(radians(180), 3, 'Z')
 
+    m2 = quat.to_matrix()
     if (leaves > 0) and (rotate > 0) and horzLeaves:
         nRotMat = Matrix.Rotation(-oldRot + rotate, 3, 'Z')
+        final_rot_mat =  m2.to_3x3() @ rot_mat @ downRotMat @ nRotMat @ rot_mat2
+    else:
+        final_rot_mat =  m2.to_3x3() @ rot_mat @ downRotMat @ rot_mat2
 
-    m2 = quat.to_matrix()
-    final_rot_mat =  m2.to_3x3() @ rot_mat @ downRotMat @ nRotMat @ rot_mat2
     # v.rotate(rotMat)
     # v.rotate(quat)
     if (bend != 0.0) and (leaves > 0):
@@ -1800,12 +1807,8 @@ def addTree(treeOb):
 
     if leaves:
         leaf_bmesh = bmesh.new()
-        leafDupliVerts = []
-        leafDupliFaces = []
-        leafDupliUVs = []
         ori_mesh = GetLeafMeshTemplate(props.leafShape, props.leafDupliObj, props.leafScaleX, props.leave_UVSize, props.leaf_flipUV)
         oldRot = 0.0
-        n = min(3, n + 1)
         # For each of the child points we add leaves
         for cp in childP:
             # If the special flag is set then we need to add several leaves at the same location

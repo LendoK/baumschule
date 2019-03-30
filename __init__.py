@@ -113,14 +113,7 @@ def getPresetpath():
     """Support user defined scripts directory
        Find the first occurrence of add_curve_sapling/presets in possible script paths
        and return it as preset path"""
-    # presetpath = ""
-    # for p in bpy.utils.script_paths():
-    #    presetpath = os.path.join(p, 'addons', 'add_curve_sapling_3', 'presets')
-    #    if os.path.exists(presetpath):
-    #        break
-    # return presetpath
 
-    # why not just do this
     script_file = os.path.realpath(__file__)
     directory = os.path.dirname(script_file)
     directory = os.path.join(directory, "presets")
@@ -129,7 +122,7 @@ def getPresetpath():
 
 def getPresetpaths():
     """Return paths for both local and user preset folders"""
-    userDir = os.path.join(bpy.utils.script_path_user(), 'presets', 'operator', 'add_curve_sapling')
+    userDir = os.path.join(bpy.utils.script_path_user(), 'presets', 'operator', 'baumschule')
 
     if os.path.isdir(userDir):
         pass
@@ -310,6 +303,10 @@ class tree_tree_props(bpy.types.PropertyGroup):
         if not useSet:
             bs_utils.addTree(context.object)
         self.do_update = True
+
+    def update_leaf_shape(self, context):
+        if self.leafShape != "dVert":
+            self.update_leaves(context)
 
     def update_leaves(self, context):
         if self.showLeaves:
@@ -738,7 +735,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
         name='Leaves',
         description="Maximum number of leaves per branch (negative values grow "
                     "leaves from branch tip (palmate compound leaves))",
-        min=1,
+        min=3,
         # soft_min=20,
         # soft_max=20,
         max=30,
@@ -797,7 +794,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
         name='Leaf Shape',
         description='The shape of the leaves',
         items=(('hex', 'Hexagonal', 'hex'), ('rect', 'Rectangular', 'rect'), ('tri', 'Triangle', 'tri'),('dVert', 'Leaf Object', 'dVert')),
-        default='rect', update=update_leaves
+        default='rect', update=update_leaf_shape
         )
     leafDupliObj: EnumProperty(
         name='Leaf Object',
@@ -1124,7 +1121,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
             col.prop(self, 'rMode')
 
             box.column().prop(self, 'curveRes')
-            box.column().prop(self, 'deadBranch_C')
+            # box.column().prop(self, 'deadBranch_C')
 
 
         elif self.chooseSet == '3':
@@ -1161,7 +1158,14 @@ class tree_tree_props(bpy.types.PropertyGroup):
             row = box.row()
             row.enabled= self.leafShape == 'dVert'
             #  ('dVert', 'DupliVerts', 'dVert')
-            row.prop(self, 'leafDupliObj')
+            box = box.column()
+            if row.enabled and self.leafDupliObj:
+                if self.leafDupliObj == 'NONE':
+                    row.label(text="No appropriate objects in the Scene", icon='ERROR')
+                    box.enabled = False
+                else:
+                    box.enabled = True
+                    row.prop(self, 'leafDupliObj')
             box.prop(self, 'leaves')
             box.prop(self, 'leafDist')
 
