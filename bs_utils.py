@@ -606,14 +606,14 @@ def GetLeafMeshTemplate(leafShape, leafDupliObj, leafe_UVSize, leaf_flipUV):
 
         for i in range(0, int(len(faces) / 2)):
             uvlayer[i * 8 + 0].uv = Vector((.5, 0))
-            uvlayer[i * 8 + 1].uv = Vector((u1, 1 / 3))
-            uvlayer[i * 8 + 2].uv = Vector((u1, 2 / 3))
-            uvlayer[i * 8 + 3].uv = Vector((.5, 1))
+            uvlayer[i * 8 + 1].uv = Vector((u1, (1 / 3)*leafe_UVSize[1]))
+            uvlayer[i * 8 + 2].uv = Vector((u1, (2 / 3)*leafe_UVSize[1]))
+            uvlayer[i * 8 + 3].uv = Vector((.5, 1*leafe_UVSize[1]))
 
             uvlayer[i * 8 + 4].uv = Vector((.5, 0))
-            uvlayer[i * 8 + 5].uv = Vector((.5, 1))
-            uvlayer[i * 8 + 6].uv = Vector((u2, 2 / 3))
-            uvlayer[i * 8 + 7].uv = Vector((u2, 1 / 3))
+            uvlayer[i * 8 + 5].uv = Vector((.5, 1*leafe_UVSize[1]))
+            uvlayer[i * 8 + 6].uv = Vector((u2, (2 / 3)*leafe_UVSize[1]))
+            uvlayer[i * 8 + 7].uv = Vector((u2, (1 / 3)*leafe_UVSize[1]))
         return leafTemplate
 
     elif leafShape == 'rect':
