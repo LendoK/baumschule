@@ -809,9 +809,9 @@ class tree_tree_props(bpy.types.PropertyGroup):
         description='rotates uv set',
         default=False, update=update_tree
     )
-    leave_UVSize: FloatVectorProperty(
-        name='leave_UVSize',
-        description='UV Coordinatis Size',
+    leaf_UVSize: FloatVectorProperty(
+        name='leaf_UVSize',
+        description='UV Coordinate Size',
         min=0.0,
         max=100.0,
         default=[1, 1],
@@ -1188,8 +1188,9 @@ class tree_tree_props(bpy.types.PropertyGroup):
 
             box.label(text="UV Properties:")
             row =box.row()
-            row.prop(self, 'leaf_flipUV', text=' Flip UV Coords')
+            row.prop(self, 'leaf_flipUV', text='Flip UV Coords')
             row.prop(self, 'leaf_flipUVrandom', text='random flipping')
+            row.prop(self, 'leaf_UVSize', text='UV Size')
             row =box.row()
             # box.label(" ")
             # box.prop(self, 'bend')

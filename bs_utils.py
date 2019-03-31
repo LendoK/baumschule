@@ -580,7 +580,7 @@ def growSpline(n, stem, numSplit, splitAng, splitAngV, splineList,
     stem.updateEnd()
     # return splineList
 
-def GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, leave_UVSize, leaf_flipUV):
+def GetLeafMeshTemplate(leafShape, leafDupliObj, leafe_UVSize, leaf_flipUV):
 
     if leafShape == 'hex':
         verts = [
@@ -596,8 +596,13 @@ def GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, leave_UVSize, leaf_
         leafTemplate.uv_layers.new(name="UVMap")
         uvlayer = leafTemplate.uv_layers.active.data
 
-        u1 = .5 * (1 - leafScaleX)
+        u1 = .5 * leafe_UVSize[0]
         u2 = 1 - u1
+
+        if leaf_flipUV :
+            temp = u2
+            u2 = u1
+            u1 = temp
 
         for i in range(0, int(len(faces) / 2)):
             uvlayer[i * 8 + 0].uv = Vector((.5, 0))
@@ -621,8 +626,8 @@ def GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, leave_UVSize, leaf_
         leafTemplate.uv_layers.new(name="UVMap")
         uvlayer = leafTemplate.uv_layers.active.data
 
-        u1 = (0.5 * (1 - leafScaleX)) * leave_UVSize[0]
-        u2 = (1 - u1) * leave_UVSize[1]
+        u1 = 0.5 * leafe_UVSize[0]
+        u2 = (1 - u1)
 
         if leaf_flipUV :
             temp = u2
@@ -630,8 +635,8 @@ def GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, leave_UVSize, leaf_
             u1 = temp
 
         uvlayer[0].uv = Vector((u2, 0))
-        uvlayer[1].uv = Vector((u2, 1))
-        uvlayer[2].uv = Vector((u1, 1))
+        uvlayer[1].uv = Vector((u2, 1* leafe_UVSize[1]))
+        uvlayer[2].uv = Vector((u1, 1* leafe_UVSize[1]))
         uvlayer[3].uv = Vector((u1, 0))
         return leafTemplate
 
@@ -643,9 +648,18 @@ def GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, leave_UVSize, leaf_
         leafTemplate.from_pydata(verts, (), faces)
         leafTemplate.uv_layers.new(name="UVMap")
         uvlayer = leafTemplate.uv_layers.active.data
-        uvlayer[0].uv = Vector((0.5, -1))
-        uvlayer[1].uv = Vector((-0.5, 1))
-        uvlayer[2].uv = Vector((1.5, 1))
+
+        u1 = -0.5-(leafe_UVSize[0]-1)
+        u2 = 1.5+ (leafe_UVSize[0]-1)
+
+        if leaf_flipUV :
+            temp = u2
+            u2 = u1
+            u1 = temp
+
+        uvlayer[0].uv = Vector((0.5 , -1))
+        uvlayer[1].uv = Vector((u1, 1* leafe_UVSize[1]))
+        uvlayer[2].uv = Vector((u2, 1* leafe_UVSize[1]))
         return leafTemplate
 
     elif leafShape == 'dVert':
@@ -653,6 +667,8 @@ def GetLeafMeshTemplate(leafShape, leafDupliObj, leafScaleX, leave_UVSize, leaf_
             return bpy.data.objects[leafDupliObj].data.copy()
         else:
             return None
+
+fliped = False
 
 def CreateLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
                 offset, index, downAngle, downAngleV, rotate, rotateV, oldRot,
@@ -744,14 +760,13 @@ def CreateLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
         final_rot_mat @= rotateZ @ rotateZOrien @ rotateX @ rotateZOrien2
 
 
-
-    if leaf_flipUVrandom and random() > 0.5:
-        fl = -1
-    else:
-        fl = 1
+    global fliped
+    if leaf_flipUVrandom and fliped:
+        leafScaleX = -leafScaleX
+    fliped = not(fliped)
     #scaling
     leafScale = leafScale * uniform(1 - leafScaleV, 1 + leafScaleV)
-    scale_mat = Matrix.Scale(leafScale*leafScaleX * fl, 4, Vector((1.0, 0.0, 0.0)))
+    scale_mat = Matrix.Scale(leafScale*leafScaleX, 4, Vector((1.0, 0.0, 0.0)))
     scale_mat = scale_mat @ Matrix.Scale(leafScale, 4, Vector((0.0, 1.0, 0.0)))
     scale_mat = scale_mat @ Matrix.Scale(leafScale, 4, Vector((0.0, 0.0, 1.0)))
 
@@ -1807,7 +1822,7 @@ def addTree(treeOb):
 
     if leaves:
         leaf_bmesh = bmesh.new()
-        ori_mesh = GetLeafMeshTemplate(props.leafShape, props.leafDupliObj, props.leafScaleX, props.leave_UVSize, props.leaf_flipUV)
+        ori_mesh = GetLeafMeshTemplate(props.leafShape, props.leafDupliObj, props.leaf_UVSize, props.leaf_flipUV)
         oldRot = 0.0
         # For each of the child points we add leaves
         for cp in childP:
