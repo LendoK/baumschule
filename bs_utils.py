@@ -1833,7 +1833,7 @@ def addTree(treeOb):
                     oldRot = CreateLeafMesh(leafScale, props.leafScaleX, props.leafScaleT, props.leafScaleV,
                             cp.co, cp.quat, cp.offset, len(leafVerts),
                             leafDownAngle, leafDownAngleV, leafRotate,
-                            leafRotateV, oldRot, prps.bend, leaves, props.leafShape,
+                            leafRotateV, oldRot, props.bend, leaves, props.leafShape,
                             props.leafangle, props.horzLeaves, ori_mesh, leaf_bmesh, props.leaf_flipUVrandom)
                     leafP.append(cp)
             # Otherwise just add the leaves like splines
