@@ -822,7 +822,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
         name='Leaf Bend',
         description='The proportion of bending applied to the leaf (Bend)',
         min=0.0,
-        max=1.0,
+        max=5.0,
         default=0.0, update=update_leaves
         )
 
@@ -1193,7 +1193,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
             row.prop(self, 'leaf_UVSize', text='UV Size')
             row =box.row()
             # box.label(" ")
-            # box.prop(self, 'bend')
+            box.prop(self, 'bend')
         elif self.chooseSet == '5':
             box = layout.box()
             box.label(text="Prune:")

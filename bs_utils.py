@@ -717,26 +717,26 @@ def CreateLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
     else:
         leafScale = leafScale * (1 - f * leafScaleT)
 
-    if (bend != 0.0) and (leaves >= 0):
-        normal = yAxis.copy()
-        orientationVec = zAxis.copy()
+    # if (bend != 0.0) and (leaves >= 0):
+    #     normal = yAxis.copy()
+    #     orientationVec = zAxis.copy()
 
-        normal.rotate(quat)
-        orientationVec.rotate(quat)
+    #     normal.rotate(quat)
+    #     orientationVec.rotate(quat)
 
-        thetaPos = atan2(loc.y, loc.x)
-        thetaBend = thetaPos - atan2(normal.y, normal.x)
-        rotateZ = Matrix.Rotation(bend * thetaBend, 3, 'Z')
-        normal.rotate(rotateZ)
-        orientationVec.rotate(rotateZ)
+    #     thetaPos = atan2(loc.y, loc.x)
+    #     thetaBend = thetaPos - atan2(normal.y, normal.x)
+    #     rotateZ = Matrix.Rotation(bend * thetaBend, 3, 'Z')
+    #     normal.rotate(rotateZ)
+    #     orientationVec.rotate(rotateZ)
 
-        phiBend = atan2((normal.xy).length, normal.z)
-        orientation = atan2(orientationVec.y, orientationVec.x)
-        rotateZOrien = Matrix.Rotation(orientation, 3, 'X')
+    #     phiBend = atan2((normal.xy).length, normal.z)
+    #     orientation = atan2(orientationVec.y, orientationVec.x)
+    #     rotateZOrien = Matrix.Rotation(orientation, 3, 'X')
 
-        rotateX = Matrix.Rotation(bend * phiBend, 3, 'Z')
+    #     rotateX = Matrix.Rotation(bend * phiBend, 3, 'Z')
 
-        rotateZOrien2 = Matrix.Rotation(-orientation, 3, 'X')
+    #     rotateZOrien2 = Matrix.Rotation(-orientation, 3, 'X')
 
 
     rot_mat2 = Matrix.Rotation(radians(180), 3, 'Z')
@@ -755,9 +755,9 @@ def CreateLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
 
     # v.rotate(rotMat)
     # v.rotate(quat)
-    if (bend != 0.0) and (leaves > 0):
-        # Correct the rotation
-        final_rot_mat @= rotateZ @ rotateZOrien @ rotateX @ rotateZOrien2
+    # if (bend != 0.0) and (leaves > 0):
+    #     # Correct the rotation
+    #     final_rot_mat @= rotateZ @ rotateZOrien @ rotateX @ rotateZOrien2
 
 
     global fliped
@@ -776,7 +776,8 @@ def CreateLeafMesh(leafScale, leafScaleX, leafScaleT, leafScaleV, loc, quat,
 
     ori_mesh.transform(trans_mat)
     leaf_bmesh.from_mesh(ori_mesh)
-    trans_mat.invert()
+    if leafScale * leafScaleX > 0:
+        trans_mat.invert()
     #transform back
     ori_mesh.transform(trans_mat)
     return oldRot
@@ -1533,13 +1534,16 @@ def addTree(treeOb):
 
     materials = None
     oldmesh = None
+    materials = [mat.material for mat in treeOb.material_slots]
+    iscurve = False
     if(treeOb.type == 'MESH'):
-        materials = [mat.material for mat in treeOb.material_slots]
         oldmesh = treeOb.data
         bpy.ops.object.convert(target='CURVE')
         bpy.ops.object.material_slot_add()
         if len(materials) > 0: treeOb.material_slots[0].material = materials[0]
-    elif (len(treeOb.material_slots) < 1): bpy.ops.object.material_slot_add()
+    elif (len(treeOb.material_slots) < 1):
+        iscurve = True
+        bpy.ops.object.material_slot_add()
     cu = treeOb.data
     cu.splines.clear()
     props = treeOb.tree_props
@@ -1852,6 +1856,19 @@ def addTree(treeOb):
         bpy.context.scene.collection.objects.link(leafObj)
         leafObj.select_set(True)
         leafObj.parent = treeOb
+
+        if props.bend > 0:
+            # leaf_bmesh.ensure_lookup_table()
+            al = leaf_bmesh.loops.layers.uv.active
+            y = 0
+            for face in leaf_bmesh.faces:
+                for loop in face.loops:
+                    uv = loop[al].uv
+                    vert = loop.vert
+                    y = deepcopy(vert.co.y)
+                    yy = y + 1
+                    vert.co = Vector((vert.co.x, deepcopy(yy),  vert.co.z))
+
         leaf_bmesh.to_mesh(leafMesh)
         leaf_bmesh.free()
         del leaf_bmesh
@@ -1861,7 +1878,8 @@ def addTree(treeOb):
         treeOb.select_set(False)
         bpy.context.view_layer.objects.active= leafObj
         bpy.ops.object.material_slot_add()
-        if(len(materials) > 1): leafObj.material_slots[0].material = materials[1]
+        if(len(materials) > 1):
+            leafObj.material_slots[0].material = materials[1]
 
         treeOb.select_set(True)
 
