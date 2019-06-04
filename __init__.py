@@ -1146,7 +1146,9 @@ class tree_tree_props(bpy.types.PropertyGroup):
 
         elif self.chooseSet == '4':
             box = layout.box()
-            box.label(text="Leaves:")
+            box.enabled = self.convertToMesh
+            text = "Leaves:" + "" if self.convertToMesh else "(Convert to Mesh needs to be enabled!)"
+            box.label(text=text)
             box.prop(self, 'showLeaves')
             box = box.column()
             box.enabled = self.showLeaves
@@ -1193,7 +1195,7 @@ class tree_tree_props(bpy.types.PropertyGroup):
             row.prop(self, 'leaf_UVSize', text='UV Size')
             row =box.row()
             # box.label(" ")
-            box.prop(self, 'bend')
+            # box.prop(self, 'bend')
         elif self.chooseSet == '5':
             box = layout.box()
             box.label(text="Prune:")

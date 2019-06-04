@@ -1532,18 +1532,19 @@ def addTree(treeOb):
     # # Initialise the tree object and curve and adjust the settings
     treeOb.show_bounds = True
 
-    materials = None
     oldmesh = None
     materials = [mat.material for mat in treeOb.material_slots]
-    iscurve = False
     if(treeOb.type == 'MESH'):
         oldmesh = treeOb.data
         bpy.ops.object.convert(target='CURVE')
+    if (len(treeOb.material_slots) < 1):
         bpy.ops.object.material_slot_add()
-        if len(materials) > 0: treeOb.material_slots[0].material = materials[0]
-    elif (len(treeOb.material_slots) < 1):
-        iscurve = True
-        bpy.ops.object.material_slot_add()
+    treeOb.material_slots[0].material = bpy.data.materials[0]
+    if len(materials) > 0:
+        if materials[0] is not None:
+            treeOb.material_slots[0].material = materials[0]
+
+
     cu = treeOb.data
     cu.splines.clear()
     props = treeOb.tree_props
@@ -1824,7 +1825,7 @@ def addTree(treeOb):
 
     leafP = []
 
-    if leaves:
+    if leaves and props.convertToMesh:
         leaf_bmesh = bmesh.new()
         ori_mesh = GetLeafMeshTemplate(props.leafShape, props.leafDupliObj, props.leaf_UVSize, props.leaf_flipUV)
         oldRot = 0.0
@@ -1880,6 +1881,8 @@ def addTree(treeOb):
         bpy.ops.object.material_slot_add()
         if(len(materials) > 1):
             leafObj.material_slots[0].material = materials[1]
+        elif bpy.data.materials:
+            leafObj.material_slots[0].material = bpy.data.materials[0]
 
         treeOb.select_set(True)
 
@@ -1889,26 +1892,5 @@ def addTree(treeOb):
         bpy.ops.object.join()
         bpy.data.meshes.remove(leafMesh)
 
-
-    # If we need an armature we add it
-    if useArm:
-
-        leafVertSize = {'hex': 6, 'rect': 4, 'dFace': 4, 'dVert': 1, 'tri': 3}[props.leafShape]
-
-        armLevels = min(armLevels, props.levels)
-        armLevels -= 1
-
-        # unpack vars from splineToBone
-        splineToBone1 = splineToBone
-        splineToBone = [s[0] if len(s) > 1 else s for s in splineToBone1]
-        isend = [s[1] if len(s) > 1 else False for s in splineToBone1]
-        issplit = [s[2] if len(s) > 2 else False for s in splineToBone1]
-        splitPidx = [s[3] if len(s) > 2 else 0 for s in splineToBone1]
-        # Create the armature and objects
-        create_armature(
-                    armAnim, leafP, cu, frameRate, leafMesh, leafObj, leafVertSize,
-                    leaves, levelCount, splineToBone, treeOb, wind, gust, gustF, af1,
-                    af2, af3, leafAnim, loopFrames, previewArm, armLevels, makeMesh, boneStep
-                    )
 
     print("Tree creation in {0}s".format(time.time() - start_time))
