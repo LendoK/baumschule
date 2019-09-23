@@ -16,3 +16,5 @@ It’s intention is to improve the process of creating a game ready asset. Apply
 * custom leaf shape
 ## Issues
 * pruning, armature, animations and save presets not ported yet
+## Video
+https://youtu.be/YenLP6ZvG78

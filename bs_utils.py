@@ -1530,7 +1530,7 @@ def findtaper(length, taper, shape, shapeS, levels, customShape):
 def addTree(treeOb):
     start_time = time.time()
     # # Initialise the tree object and curve and adjust the settings
-    treeOb.show_bounds = True
+    # treeOb.show_bounds = True
 
     oldmesh = None
     materials = [mat.material for mat in treeOb.material_slots]
