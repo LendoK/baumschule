@@ -305,8 +305,8 @@ class tree_tree_props(bpy.types.PropertyGroup):
             bs_utils.addTree(context.object)
 
     def update_leaf_shape(self, context):
-        # if self.leafShape != "dVert":
-        self.update_leaves(context)
+        if self.leafShape != "dVert":
+            self.update_leaves(context)
 
     def update_leaves(self, context):
         if self.showLeaves and not useSet:
