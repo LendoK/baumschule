@@ -17,4 +17,6 @@ It’s intention is to improve the process of creating a game ready asset. Apply
 ## Issues
 * pruning, armature, animations and save presets not ported yet
 ## Video
+https://lbry.tv/@LendoKe:9/baumschule_lbry
+
 https://youtu.be/YenLP6ZvG78
