@@ -1539,7 +1539,10 @@ def addTree(treeOb):
         bpy.ops.object.convert(target='CURVE')
     if (len(treeOb.material_slots) < 1):
         bpy.ops.object.material_slot_add()
-    treeOb.material_slots[0].material = bpy.data.materials[0]
+        mat = bpy.data.materials.get("tree_mat")
+        if not mat:
+            mat = bpy.data.materials.new(name="tree_mat")
+        treeOb.material_slots[0].material = mat
     if len(materials) > 0:
         if materials[0] is not None:
             treeOb.material_slots[0].material = materials[0]
@@ -1881,7 +1884,10 @@ def addTree(treeOb):
         if(len(materials) > 1):
             leafObj.material_slots[0].material = materials[1]
         elif bpy.data.materials:
-            leafObj.material_slots[0].material = bpy.data.materials[0]
+            mat = bpy.data.materials.get("leaf_mat")
+            if not mat:
+                mat = bpy.data.materials.new(name="leaf_mat")
+            leafObj.material_slots[0].material = mat
 
         treeOb.select_set(True)
 
