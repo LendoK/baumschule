@@ -21,7 +21,7 @@ bl_info = {
     "name": "Baumschule",
     "author": "Andrew Hale (TrumanBlending), Aaron Buchler, Lendo Keilbaum",
     "version": (1, 1, 0),
-    "blender": (2, 80, 0),
+    "blender": (2, 83, 0),
     "location": "View3D > Add > Curve",
     "description": ("Adds a parametric tree. The method is presented by "
     "Jason Weber & Joseph Penn in their paper 'Creation and Rendering of "

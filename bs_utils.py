@@ -1670,7 +1670,6 @@ def addTree(treeOb):
     cu.fill_mode = 'FULL'
     cu.bevel_depth = bevelDepth
     cu.bevel_resolution = props.bevelRes
-    cu.use_uv_as_generated = True
 
     # Fix the scale of the tree now
     scaleVal = scale + uniform(-scaleV, scaleV)
