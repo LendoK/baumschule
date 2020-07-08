@@ -32,7 +32,7 @@ if "bpy" in locals():
     import importlib
     importlib.reload(bs_utils)
 else:
-    from baumschule import bs_utils
+    from . import bs_utils
 
 import bpy
 import bpy.utils.previews
@@ -1251,7 +1251,7 @@ def menu_func(self, context):
 
 def getScriptDir():
     for p in bpy.utils.script_paths():
-        sp = os.path.join(p, 'addons', 'baumschule')
+        sp = os.path.dirname(os.path.realpath(__file__))
         if os.path.exists(sp):
             return sp
 
