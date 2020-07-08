@@ -20,7 +20,7 @@
 bl_info = {
     "name": "Baumschule",
     "author": "Andrew Hale (TrumanBlending), Aaron Buchler, Lendo Keilbaum",
-    "version": (1, 1, 0),
+    "version": (1, 1, 1),
     "blender": (2, 83, 0),
     "location": "View3D > Add > Curve",
     "description": ("Adds a parametric tree. The method is presented by "
@@ -1250,10 +1250,9 @@ def menu_func(self, context):
 
 
 def getScriptDir():
-    for p in bpy.utils.script_paths():
-        sp = os.path.dirname(os.path.realpath(__file__))
-        if os.path.exists(sp):
-            return sp
+    sp = os.path.dirname(os.path.realpath(__file__))
+    if os.path.exists(sp):
+        return sp
 
 classes = (
     AddTree,
